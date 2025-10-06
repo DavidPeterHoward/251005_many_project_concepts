@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bra Underwire Electromagnetic Analysis Dashboard (v1)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .control-group {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .control-group select, .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .range-input {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .range-value {
+            text-align: center;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .panel-title {
+            text-align: center;
+            font-size: 1.3em;
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .visualization-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 300px;
+            position: relative;
+        }
+
+        .animation-canvas {
+            width: 100%;
+            height: 280px;
+            border-radius: 8px;
+            background: radial-gradient(circle at center, #1a1a2e, #16213e);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: #ffd700;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .statistics-panel {
+            grid-column: 1 / -1;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #4ecdc4;
+        }
+
+        .stat-label {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            color: white;
+        }
+
+        .frequency-bands {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .band-indicator {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .band-indicator.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .safety-indicator {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .safety-pass {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4caf50;
+            color: #4caf50;
+        }
+
+        .safety-warning {
+            background: rgba(255, 193, 7, 0.3);
+            border: 2px solid #ffc107;
+            color: #ffc107;
+        }
+
+        .safety-fail {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+            color: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animated-element {
+            animation: pulse 2s infinite;
+        }
+
+        .rotating-element {
+            animation: rotate 10s linear infinite;
+        }
+
+        .wave-element {
+            animation: wave 3s ease-in-out infinite;
+        }
+
+        .material-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .material-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .material-card:hover, .material-card.selected {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .material-name {
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .material-properties {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Bra Underwire Electromagnetic Analysis Dashboard (v1)</h1>
+            <p>Real-time Analysis of Underwire Antenna Systems & Material Properties</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="cupSize">Cup Size</label>
+                    <select id="cupSize" onchange="updateAnalysis()">
+                        <option value="A">A Cup</option>
+                        <option value="B">B Cup</option>
+                        <option value="C" selected>C Cup</option>
+                        <option value="D">D Cup</option>
+                        <option value="DD">DD Cup</option>
+                        <option value="DDD">DDD+ Cup</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="material">Wire Material</label>
+                    <select id="material" onchange="updateAnalysis()">
+                        <option value="copper">Copper</option>
+                        <option value="steel" selected>Stainless Steel</option>
+                        <option value="aluminum">Aluminum</option>
+                        <option value="titanium">Titanium</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="frequency">Frequency (MHz)</label>
+                    <input type="range" id="frequency" class="range-input" min="100" max="6000" value="2400" oninput="updateAnalysis()">
+                    <div class="range-value" id="freqValue">2400 MHz</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="power">Power Level (mW)</label>
+                    <input type="range" id="power" class="range-input" min="10" max="1000" value="100" oninput="updateAnalysis()">
+                    <div class="range-value" id="powerValue">100 mW</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="frequency-bands">
+            <div class="band-indicator" onclick="setFrequency(900)">GSM 900</div>
+            <div class="band-indicator" onclick="setFrequency(1800)">GSM 1800</div>
+            <div class="band-indicator active" onclick="setFrequency(2400)">WiFi 2.4G</div>
+            <div class="band-indicator" onclick="setFrequency(3500)">5G Mid</div>
+            <div class="band-indicator" onclick="setFrequency(5800)">WiFi 5G</div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-title">Radiation Pattern Animation</div>
+                <div class="visualization-container">
+                    <canvas id="radiationCanvas" class="animation-canvas"></canvas>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="gainValue">-8.3</div>
+                        <div class="metric-label">Peak Gain (dBi)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="efficiencyValue">15.2</div>
+                        <div class="metric-label">Efficiency (%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="vswrValue">3.24</div>
+                        <div class="metric-label">VSWR</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">SAR Distribution & Safety</div>
+                <div class="visualization-container">
+                    <canvas id="sarCanvas" class="animation-canvas"></canvas>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="sar1gValue">0.34</div>
+                        <div class="metric-label">SAR 1g (W/kg)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="sar10gValue">0.18</div>
+                        <div class="metric-label">SAR 10g (W/kg)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="tempRise">0.3</div>
+                        <div class="metric-label">Temp Rise (°C)</div>
+                    </div>
+                </div>
+                <div class="safety-indicator" id="safetyStatus">
+                    ✓ SAFETY COMPLIANT
+                </div>
+            </div>
+        </div>
+
+        <div class="panel statistics-panel">
+            <div class="panel-title">Material Properties & Performance Statistics</div>
+            
+            <div class="material-comparison">
+                <div class="material-card selected" data-material="steel">
+                    <div class="material-name">Stainless Steel</div>
+                    <div class="material-properties">
+                        Conductivity: 1.4 MS/m<br>
+                        Efficiency: 8-12%<br>
+                        Cost: Low
+                    </div>
+                </div>
+                <div class="material-card" data-material="copper">
+                    <div class="material-name">Copper</div>
+                    <div class="material-properties">
+                        Conductivity: 59.6 MS/m<br>
+                        Efficiency: 20-30%<br>
+                        Cost: Medium
+                    </div>
+                </div>
+                <div class="material-card" data-material="aluminum">
+                    <div class="material-name">Aluminum</div>
+                    <div class="material-properties">
+                        Conductivity: 37.7 MS/m<br>
+                        Efficiency: 15-25%<br>
+                        Cost: Low
+                    </div>
+                </div>
+                <div class="material-card" data-material="titanium">
+                    <div class="material-name">Titanium</div>
+                    <div class="material-properties">
+                        Conductivity: 2.4 MS/m<br>
+                        Efficiency: 5-8%<br>
+                        Cost: Very High
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-label">Wire Length</div>
+                    <div class="stat-value" id="wireLength">18.5 cm</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Resonant Frequency</div>
+                    <div class="stat-value" id="resonantFreq">2.15 GHz</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Bandwidth</div>
+                    <div class="stat-value" id="bandwidth">85 MHz</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Input Impedance</div>
+                    <div class="stat-value" id="impedance">42.3-j127Ω</div>
+                </div>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-label">Body Loading Factor</div>
+                    <div class="stat-value" id="bodyLoading">0.35</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Near-field Strength</div>
+                    <div class="stat-value" id="nearField">145 V/m</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Radiation Resistance</div>
+                    <div class="stat-value" id="radResistance">2.8 Ω</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Q Factor</div>
+                    <div class="stat-value" id="qFactor">28</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration object
+        const config = {
+            cupSize: 'C',
+            material: 'steel',
+            frequency: 2400,
+            power: 100
+        };
+
+        // Material properties database
+        const materials = {
+            copper: { conductivity: 59.6, efficiency: 0.25, color: '#ff6b6b', cost: 'Medium' },
+            steel: { conductivity: 1.4, efficiency: 0.10, color: '#96ceb4', cost: 'Low' },
+            aluminum: { conductivity: 37.7, efficiency: 0.20, color: '#4ecdc4', cost: 'Low' },
+            titanium: { conductivity: 2.4, efficiency: 0.065, color: '#ffd700', cost: 'Very High' }
+        };
+
+        // Cup size dimensions
+        const cupSizes = {
+            A: { wireLength: 15.8, circumference: 71 },
+            B: { wireLength: 17.1, circumference: 74 },
+            C: { wireLength: 18.5, circumference: 77 },
+            D: { wireLength: 20.2, circumference: 81 },
+            DD: { wireLength: 22.1, circumference: 86 },
+            DDD: { wireLength: 24.5, circumference: 91 }
+        };
+
+        let animationFrame;
+
+        function updateAnalysis() {
+            // Update configuration
+            config.cupSize = document.getElementById('cupSize').value;
+            config.material = document.getElementById('material').value;
+            config.frequency = parseInt(document.getElementById('frequency').value);
+            config.power = parseInt(document.getElementById('power').value);
+
+            // Update display values
+            document.getElementById('freqValue').textContent = config.frequency + ' MHz';
+            document.getElementById('powerValue').textContent = config.power + ' mW';
+
+            // Calculate electromagnetic properties
+            calculateProperties();
+            
+            // Update visualizations
+            animateRadiationPattern();
+            animateSARDistribution();
+            
+            // Update material selection
+            updateMaterialSelection();
+        }
+
+        function calculateProperties() {
+            const material = materials[config.material];
+            const dimensions = cupSizes[config.cupSize];
+            
+            // Basic electromagnetic calculations
+            const wavelength = 300 / config.frequency; // meters
+            const wireLength = dimensions.wireLength / 100; // convert to meters
+            const electricalLength = wireLength / wavelength;
+            
+            // Efficiency calculation
+            const skinDepth = Math.sqrt(2 / (2 * Math.PI * config.frequency * 1e6 * 4 * Math.PI * 1e-7 * material.conductivity * 1e6));
+            const efficiency = material.efficiency * (1 - 0.3 * Math.exp(-wireLength / (wavelength * 0.25)));
+            
+            // Gain calculation
+            const gain = 10 * Math.log10(efficiency * 1.64);
+            
+            // VSWR calculation
+            const q = 20 + 10 / material.efficiency;
+            const freqRatio = config.frequency / (300 / (4 * wireLength) * 100);
+            const vswr = 1 + q * Math.abs(freqRatio - 1);
+            
+            // SAR calculations
+            const powerDensity = config.power / 1000 / (4 * Math.PI * 0.001); // 1mm distance
+            const sar1g = 0.8 * powerDensity / 1000 * (1 + 0.3 * electricalLength);
+            const sar10g = sar1g * 0.6;
+            const tempRise = sar1g * 300 / 3700; // 5 minute exposure
+            
+            // Resonant frequency
+            const resonantFreq = 300 / (4 * wireLength) / 1000; // GHz
+            
+            // Body loading factor
+            const bodyLoading = 0.2 + 0.3 * Math.exp(-config.frequency / 1000);
+            
+            // Update display
+            document.getElementById('gainValue').textContent = gain.toFixed(1);
+            document.getElementById('efficiencyValue').textContent = (efficiency * 100).toFixed(1);
+            document.getElementById('vswrValue').textContent = Math.min(vswr, 10).toFixed(2);
+            document.getElementById('sar1gValue').textContent = sar1g.toFixed(2);
+            document.getElementById('sar10gValue').textContent = sar10g.toFixed(2);
+            document.getElementById('tempRise').textContent = tempRise.toFixed(1);
+            
+            document.getElementById('wireLength').textContent = dimensions.wireLength + ' cm';
+            document.getElementById('resonantFreq').textContent = resonantFreq.toFixed(2) + ' GHz';
+            document.getElementById('bandwidth').textContent = Math.round(config.frequency / q) + ' MHz';
+            document.getElementById('impedance').textContent = Math.round(50 + 30 * electricalLength) + '-j' + Math.round(120 * (1 - electricalLength)) + 'Ω';
+            document.getElementById('bodyLoading').textContent = bodyLoading.toFixed(2);
+            document.getElementById('nearField').textContent = Math.round(Math.sqrt(powerDensity * 377)) + ' V/m';
+            document.getElementById('radResistance').textContent = (20 * Math.PI * Math.PI * electricalLength * electricalLength).toFixed(1) + ' Ω';
+            document.getElementById('qFactor').textContent = Math.round(q);
+            
+            // Update safety status
+            const safetyElement = document.getElementById('safetyStatus');
+            if (sar1g < 1.6 && sar10g < 2.0) {
+                safetyElement.textContent = '✓ SAFETY COMPLIANT';
+                safetyElement.className = 'safety-indicator safety-pass';
+            } else if (sar1g < 2.0 && sar10g < 2.5) {
+                safetyElement.textContent = '⚠ MARGINAL SAFETY';
+                safetyElement.className = 'safety-indicator safety-warning';
+            } else {
+                safetyElement.textContent = '✗ SAFETY LIMIT EXCEEDED';
+                safetyElement.className = 'safety-indicator safety-fail';
+            }
+        }
+
+        function animateRadiationPattern() {
+            const canvas = document.getElementById('radiationCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxRadius = Math.min(centerX, centerY) - 40;
+            
+            let angle = 0;
+            
+            function animate() {
+                // Clear canvas
+                ctx.fillStyle = 'rgba(26, 26, 46, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw polar grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 1;
+                for (let r = maxRadius / 4; r <= maxRadius; r += maxRadius / 4) {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+                
+                // Draw radiation pattern
+                const material = materials[config.material];
+                const dimensions = cupSizes[config.cupSize];
+                const electricalLength = (dimensions.wireLength / 100) / (300 / config.frequency);
+                
+                ctx.strokeStyle = material.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                for (let theta = 0; theta <= 2 * Math.PI; theta += 0.02) {
+                    let pattern = Math.abs(Math.sin(theta)) * (0.5 + 0.5 * Math.cos(2 * theta * electricalLength));
+                    pattern *= (0.7 + 0.3 * Math.sin(angle + theta * 3)); // Animation effect
+                    
+                    const radius = pattern * maxRadius * 0.8;
+                    const x = centerX + radius * Math.cos(theta - Math.PI / 2);
+                    const y = centerY + radius * Math.sin(theta - Math.PI / 2);
+                    
+                    if (theta === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.stroke();
+                
+                // Fill with gradient
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
+                gradient.addColorStop(0, material.color + '40');
+                gradient.addColorStop(1, material.color + '10');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Draw animated field lines
+                for (let i = 0; i < 8; i++) {
+                    const fieldAngle = (i / 8) * 2 * Math.PI + angle;
+                    const fieldRadius = maxRadius * 0.6 * (0.8 + 0.2 * Math.sin(angle * 2 + i));
+                    
+                    ctx.strokeStyle = material.color + '80';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(
+                        centerX + fieldRadius * Math.cos(fieldAngle),
+                        centerY + fieldRadius * Math.sin(fieldAngle)
+                    );
+                    ctx.stroke();
+                }
+                
+                // Draw center antenna
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(centerX - 2, centerY - 15, 4, 30);
+                
+                angle += 0.05;
+                animationFrame = requestAnimationFrame(animate);
+            }
+            
+            cancelAnimationFrame(animationFrame);
+            animate();
+        }
+
+        function animateSARDistribution() {
+            const canvas = document.getElementById('sarCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            let time = 0;
+            
+            function animate() {
+                // Clear canvas
+                ctx.fillStyle = 'rgba(26, 26, 46, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw tissue layers
+                const layers = [
+                    { name: 'Skin', y: centerY - 40, height: 20, color: '#ffdbac' },
+                    { name: 'Fat', y: centerY - 20, height: 30, color: '#ffd700' },
+                    { name: 'Muscle', y: centerY + 10, height: 40, color: '#ff6b6b' },
+                    { name: 'Breast', y: centerY + 50, height: 60, color: '#ffb3ba' }
+                ];
+                
+                layers.forEach(layer => {
+                    ctx.fillStyle = layer.color + '30';
+                    ctx.fillRect(50, layer.y, canvas.width - 100, layer.height);
+                    
+                    ctx.strokeStyle = layer.color;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(50, layer.y, canvas.width - 100, layer.height);
+                    
+                    // Layer labels
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(layer.name, 10, layer.y + layer.height / 2);
+                });
+                
+                // Draw animated SAR hotspots
+                const material = materials[config.material];
+                const sar1g = parseFloat(document.getElementById('sar1gValue').textContent);
+                
+                for (let x = 60; x < canvas.width - 60; x += 15) {
+                    for (let y = centerY - 30; y < centerY + 80; y += 15) {
+                        const distance = Math.sqrt((x - centerX) ** 2 + (y - (centerY - 10)) ** 2);
+                        const intensity = Math.exp(-distance / 80) * sar1g * (0.8 + 0.2 * Math.sin(time + distance / 20));
+                        
+                        if (intensity > 0.1) {
+                            const alpha = Math.min(intensity, 1);
+                            const red = Math.floor(255 * intensity);
+                            const green = Math.floor(255 * (1 - intensity));
+                            
+                            ctx.fillStyle = `rgba(${red}, ${green}, 0, ${alpha * 0.6})`;
+                            ctx.fillRect(x, y, 12, 12);
+                        }
+                    }
+                }
+                
+                // Draw antenna position
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY - 10, 12, 0.3 * Math.PI, 0.7 * Math.PI);
+                ctx.stroke();
+                
+                // Draw SAR contours
+                const contours = [0.5, 1.0, 1.6];
+                contours.forEach((level, index) => {
+                    if (level <= sar1g * 2) {
+                        const radius = 60 * Math.sqrt(level / (sar1g + 0.1)) * (0.9 + 0.1 * Math.sin(time * 2));
+                        ctx.strokeStyle = level >= 1.6 ? '#ff0000' : '#ffff00';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY - 10, radius, 0, 2 * Math.PI);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                });
+                
+                // Temperature scale legend
+                ctx.fillStyle = 'white';
+                ctx.font = '14px Arial';
+                ctx.fillText('SAR Distribution (W/kg)', centerX - 80, 30);
+                
+                time += 0.1;
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+
+        function setFrequency(freq) {
+            document.getElementById('frequency').value = freq;
+            config.frequency = freq;
+            
+            // Update band indicators
+            document.querySelectorAll('.band-indicator').forEach(band => {
+                band.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateAnalysis();
+        }
+
+        function updateMaterialSelection() {
+            document.querySelectorAll('.material-card').forEach(card => {
+                card.classList.remove('selected');
+                if (card.dataset.material === config.material) {
+                    card.classList.add('selected');
+                }
+            });
+        }
+
+        // Material card click handlers
+        document.querySelectorAll('.material-card').forEach(card => {
+            card.addEventListener('click', () => {
+                config.material = card.dataset.material;
+                document.getElementById('material').value = config.material;
+                updateAnalysis();
+            });
+        });
+
+        // Initialize
+        updateAnalysis();
+
+        // Responsive canvas resize
+        window.addEventListener('resize', () => {
+            setTimeout(updateAnalysis, 100);
+        });
+    </script>
+</body>
+</html>

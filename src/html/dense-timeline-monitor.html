@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dense Timeline Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafbfc;
+            --bg-tertiary: #f5f7fa;
+            --bg-hover: #eef2f5;
+            --border: #e1e5e9;
+            --border-dark: #c4cdd5;
+            
+            --accent-blue: #0066cc;
+            --accent-green: #00b894;
+            --accent-orange: #e17055;
+            --accent-red: #d63031;
+            --accent-purple: #6c5ce7;
+            --accent-cyan: #00cec9;
+            --accent-yellow: #fdcb6e;
+            --accent-pink: #e84393;
+            
+            --text-primary: #2d3436;
+            --text-secondary: #636e72;
+            --text-muted: #b2bec3;
+            --text-light: #ddd;
+            
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --radius: 4px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 12px;
+            line-height: 1.3;
+            overflow: hidden;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-areas: 
+                "header header header header"
+                "sidebar timeline metrics alerts"
+                "sidebar timeline metrics alerts";
+            grid-template-columns: 200px 1fr 280px 240px;
+            grid-template-rows: 48px 1fr 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        /* Header */
+        .header {
+            grid-area: header;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .time-controls {
+            display: flex;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius);
+            padding: 2px;
+            gap: 1px;
+        }
+
+        .time-btn {
+            padding: 4px 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 500;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .time-btn.active,
+        .time-btn:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-box {
+            width: 200px;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+            font-size: 11px;
+            transition: all 0.15s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background: var(--bg-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius);
+        }
+
+        .metric-inline {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            grid-area: sidebar;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .category-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 6px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-size: 10px;
+        }
+
+        .category-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .category-item.active {
+            background: var(--bg-tertiary);
+            border-left: 2px solid var(--accent-blue);
+        }
+
+        .category-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .category-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .category-dot.models { background: var(--accent-blue); }
+        .category-dot.views { background: var(--accent-green); }
+        .category-dot.controllers { background: var(--accent-orange); }
+        .category-dot.services { background: var(--accent-red); }
+        .category-dot.api { background: var(--accent-purple); }
+        .category-dot.config { background: var(--accent-cyan); }
+
+        .category-stats {
+            display: flex;
+            gap: 4px;
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+
+        .services-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .service-group {
+            margin-bottom: 8px;
+        }
+
+        .service-group-title {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 2px 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 6px;
+            margin-bottom: 1px;
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .service-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(1px);
+        }
+
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .service-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .service-status.healthy { background: var(--accent-green); }
+        .service-status.warning { background: var(--accent-orange); }
+        .service-status.error { background: var(--accent-red); }
+
+        .service-name {
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .service-metrics {
+            display: flex;
+            gap: 6px;
+            font-size: 8px;
+            color: var(--text-muted);
+        }
+
+        /* Timeline */
+        .timeline {
+            grid-area: timeline;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .timeline-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .timeline-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .timeline-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .timeline-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .timeline-track {
+            margin-bottom: 6px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg-secondary);
+            transition: all 0.2s;
+        }
+
+        .timeline-track:hover {
+            border-color: var(--border-dark);
+            box-shadow: var(--shadow);
+        }
+
+        .timeline-track.hidden {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .track-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .track-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .track-icon.models { background: var(--accent-blue); }
+        .track-icon.views { background: var(--accent-green); }
+        .track-icon.controllers { background: var(--accent-orange); }
+        .track-icon.services { background: var(--accent-red); }
+        .track-icon.api { background: var(--accent-purple); }
+        .track-icon.config { background: var(--accent-cyan); }
+
+        .track-details h4 {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 1px;
+        }
+
+        .track-details p {
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .track-metrics {
+            display: flex;
+            gap: 12px;
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .track-metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+
+        .track-metric-value {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .track-timeline {
+            position: relative;
+            height: 50px;
+            padding: 6px 8px;
+        }
+
+        .timeline-grid {
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 3%,
+                var(--border) 3%,
+                var(--border) 3.1%
+            );
+            opacity: 0.3;
+        }
+
+        .timeline-events {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .timeline-event {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid white;
+            cursor: pointer;
+            transition: all 0.15s;
+            z-index: 10;
+        }
+
+        .timeline-event:hover {
+            transform: scale(1.8);
+            z-index: 20;
+            box-shadow: 0 0 0 2px rgba(0,102,204,0.3);
+        }
+
+        .timeline-event.active {
+            animation: ripple 1s infinite;
+        }
+
+        @keyframes ripple {
+            0% { box-shadow: 0 0 0 0 currentColor; }
+            70% { box-shadow: 0 0 0 6px transparent; }
+            100% { box-shadow: 0 0 0 0 transparent; }
+        }
+
+        .timeline-event.code-analysis { background: var(--accent-blue); }
+        .timeline-event.semantic-analysis { background: var(--accent-green); }
+        .timeline-event.static-check { background: var(--accent-orange); }
+        .timeline-event.type-check { background: var(--accent-red); }
+        .timeline-event.deployment { background: var(--accent-purple); }
+        .timeline-event.security { background: var(--accent-pink); }
+
+        .timeline-connection {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-blue), transparent);
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.4;
+        }
+
+        .timeline-connection.active {
+            height: 2px;
+            opacity: 0.8;
+            animation: flow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes flow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .impact-zone {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            border-radius: 1px;
+            opacity: 0.08;
+            transition: opacity 0.15s;
+            cursor: pointer;
+        }
+
+        .impact-zone:hover {
+            opacity: 0.15;
+        }
+
+        .impact-zone.high { background: var(--accent-red); }
+        .impact-zone.medium { background: var(--accent-orange); }
+        .impact-zone.low { background: var(--accent-green); }
+
+        /* Metrics Panel */
+        .metrics {
+            grid-area: metrics;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .metrics-header {
+            padding: 6px 8px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .metrics-title {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .metrics-summary {
+            display: flex;
+            gap: 8px;
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .metrics-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 8px;
+            margin-bottom: 4px;
+            transition: all 0.15s;
+        }
+
+        .metric-card:hover {
+            border-color: var(--border-dark);
+            background: var(--bg-hover);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .metric-title {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .metric-change {
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+
+        .metric-change.positive { background: #e6f7ff; color: var(--accent-blue); }
+        .metric-change.negative { background: #fff1f0; color: var(--accent-red); }
+
+        .metric-main {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-unit {
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .metric-description {
+            font-size: 8px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .metric-chart {
+            height: 30px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+            padding: 2px;
+            display: flex;
+            align-items: end;
+            gap: 1px;
+        }
+
+        .chart-bar {
+            background: var(--accent-blue);
+            border-radius: 1px;
+            flex: 1;
+            min-height: 2px;
+            opacity: 0.6;
+            transition: all 0.15s;
+        }
+
+        .chart-bar:hover {
+            opacity: 1;
+            transform: scaleY(1.1);
+        }
+
+        .metric-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .metric-detail {
+            text-align: center;
+            padding: 4px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+        }
+
+        .metric-detail-value {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .metric-detail-label {
+            font-size: 7px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Alerts Panel */
+        .alerts {
+            grid-area: alerts;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .alerts-header {
+            padding: 6px 8px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .alerts-title {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .alerts-count {
+            display: flex;
+            gap: 6px;
+            font-size: 8px;
+        }
+
+        .alert-count {
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-weight: 600;
+        }
+
+        .alert-count.critical { background: #fff1f0; color: var(--accent-red); }
+        .alert-count.warning { background: #fff7e6; color: var(--accent-orange); }
+        .alert-count.info { background: #e6f7ff; color: var(--accent-blue); }
+
+        .alerts-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .alert-item {
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            margin-bottom: 2px;
+            border-radius: 2px;
+            border-left: 2px solid;
+            background: var(--bg-secondary);
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .alert-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(1px);
+        }
+
+        .alert-item.critical { border-left-color: var(--accent-red); }
+        .alert-item.warning { border-left-color: var(--accent-orange); }
+        .alert-item.info { border-left-color: var(--accent-blue); }
+
+        .alert-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6px;
+            color: white;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .alert-icon.critical { background: var(--accent-red); }
+        .alert-icon.warning { background: var(--accent-orange); }
+        .alert-icon.info { background: var(--accent-blue); }
+
+        .alert-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+
+        .alert-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .alert-time {
+            font-size: 7px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .alert-description {
+            font-size: 9px;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+
+        .alert-details {
+            display: flex;
+            gap: 8px;
+            font-size: 7px;
+            color: var(--text-muted);
+        }
+
+        .alert-detail {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: var(--text-primary);
+            color: white;
+            padding: 8px 10px;
+            border-radius: var(--radius);
+            font-size: 10px;
+            line-height: 1.4;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+            max-width: 200px;
+            box-shadow: var(--shadow);
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip-header {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+
+        .tooltip-content {
+            font-size: 9px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+
+        .tooltip-label {
+            color: #ccc;
+        }
+
+        .tooltip-value {
+            font-weight: 600;
+        }
+
+        /* Live Updates */
+        .live-update {
+            animation: highlight 0.4s ease-out;
+        }
+
+        @keyframes highlight {
+            0% { background: var(--bg-secondary); }
+            50% { background: #e6f7ff; }
+            100% { background: var(--bg-secondary); }
+        }
+
+        .pulse-update {
+            animation: pulseUpdate 0.6s ease-out;
+        }
+
+        @keyframes pulseUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .monitor-grid {
+                grid-template-columns: 180px 1fr 240px 200px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .monitor-grid {
+                grid-template-areas: 
+                    "header header header"
+                    "timeline metrics alerts"
+                    "timeline metrics alerts";
+                grid-template-columns: 1fr 240px 200px;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .monitor-grid {
+                grid-template-areas: 
+                    "header"
+                    "timeline"
+                    "timeline";
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics, .alerts {
+                display: none;
+            }
+        }
+
+        /* Additional dense information elements */
+        .dense-info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 8px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            font-size: 8px;
+            color: var(--text-secondary);
+        }
+
+        .info-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .mini-chart {
+            width: 40px;
+            height: 12px;
+            background: var(--bg-primary);
+            border-radius: 1px;
+            display: flex;
+            align-items: end;
+            gap: 1px;
+            padding: 1px;
+        }
+
+        .mini-bar {
+            background: var(--accent-blue);
+            border-radius: 0.5px;
+            flex: 1;
+            min-height: 2px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="monitor-grid">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="status-dot"></div>
+                    Timeline Monitor
+                </div>
+                
+                <div class="time-controls">
+                    <button class="time-btn active" data-range="1h">1H</button>
+                    <button class="time-btn" data-range="6h">6H</button>
+                    <button class="time-btn" data-range="24h">24H</button>
+                    <button class="time-btn" data-range="7d">7D</button>
+                    <button class="time-btn" data-range="30d">30D</button>
+                </div>
+            </div>
+            
+            <div class="header-center">
+                <input type="text" class="search-box" placeholder="Search events, commits, services..." id="searchInput">
+            </div>
+            
+            <div class="header-right">
+                <div class="live-indicator">
+                    <div class="status-dot"></div>
+                    <span>Live</span>
+                </div>
+                <span>Events: <span class="metric-inline">1,247</span></span>
+                <span>Rate: <span class="metric-inline">12/min</span></span>
+                <span>Load: <span class="metric-inline">64%</span></span>
+            </div>
+        </div>
+
+        <!-- Dense Info Bar -->
+        <div class="dense-info-bar" style="grid-area: header; margin-top: 48px; height: 20px;">
+            <div class="info-group">
+                <div class="info-item">CPU: <span class="info-value">64%</span></div>
+                <div class="info-item">MEM: <span class="info-value">2.4GB</span></div>
+                <div class="info-item">NET: <span class="info-value">1.2MB/s</span></div>
+                <div class="info-item">DISK: <span class="info-value">87%</span></div>
+            </div>
+            <div class="info-group">
+                <div class="info-item">Success: <span class="info-value">94.7%</span>
+                    <div class="mini-chart">
+                        <div class="mini-bar" style="height: 60%;"></div>
+                        <div class="mini-bar" style="height: 80%;"></div>
+                        <div class="mini-bar" style="height: 90%;"></div>
+                        <div class="mini-bar" style="height: 95%;"></div>
+                        <div class="mini-bar" style="height: 85%;"></div>
+                    </div>
+                </div>
+                <div class="info-item">Errors: <span class="info-value">23</span></div>
+                <div class="info-item">Warnings: <span class="info-value">156</span></div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Categories</div>
+                
+                <div class="category-list">
+                    <div class="category-item active" data-category="models">
+                        <div class="category-info">
+                            <div class="category-dot models"></div>
+                            <span>Models</span>
+                        </div>
+                        <div class="category-stats">
+                            <span>47</span>
+                            <span>96%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-item" data-category="views">
+                        <div class="category-info">
+                            <div class="category-dot views"></div>
+                            <span>Views</span>
+                        </div>
+                        <div class="category-stats">
+                            <span>32</span>
+                            <span>94%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-item" data-category="controllers">
+                        <div class="category-info">
+                            <div class="category-dot controllers"></div>
+                            <span>Controllers</span>
+                        </div>
+                        <div class="category-stats">
+                            <span>28</span>
+                            <span>89%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-item" data-category="services">
+                        <div class="category-info">
+                            <div class="category-dot services"></div>
+                            <span>Services</span>
+                        </div>
+                        <div class="category-stats">
+                            <span>64</span>
+                            <span>97%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-item" data-category="api">
+                        <div class="category-info">
+                            <div class="category-dot api"></div>
+                            <span>API</span>
+                        </div>
+                        <div class="category-stats">
+                            <span>23</span>
+                            <span>92%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-item" data-category="config">
+                        <div class="category-info">
+                            <div class="category-dot config"></div>
+                            <span>Config</span>
+                        </div>
+                        <div class="category-stats">
+                            <span>12</span>
+                            <span>98%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="services-section">
+                <div class="service-group">
+                    <div class="service-group-title">Analysis</div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status healthy"></div>
+                            <span class="service-name">Code Analysis</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>98.7%</span>
+                            <span>1.2s</span>
+                        </div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status warning"></div>
+                            <span class="service-name">Static Check</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>156</span>
+                            <span>94%</span>
+                        </div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status error"></div>
+                            <span class="service-name">Type Check</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>23</span>
+                            <span>4.8s</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-group">
+                    <div class="service-group-title">Deploy</div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status healthy"></div>
+                            <span class="service-name">CI/CD</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>47</span>
+                            <span>2.4m</span>
+                        </div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status healthy"></div>
+                            <span class="service-name">Registry</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>12.4GB</span>
+                            <span>99%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-group">
+                    <div class="service-group-title">Monitor</div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status healthy"></div>
+                            <span class="service-name">Metrics</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>1247</span>
+                            <span>0.8s</span>
+                        </div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-info">
+                            <div class="service-status healthy"></div>
+                            <span class="service-name">Logging</span>
+                        </div>
+                        <div class="service-metrics">
+                            <span>4.2GB</span>
+                            <span>12/s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline">
+            <div class="timeline-header">
+                <div class="timeline-title">Development Timeline</div>
+                <div class="timeline-stats">
+                    <div class="timeline-stat">
+                        <span>Active:</span>
+                        <span class="stat-value">8</span>
+                    </div>
+                    <div class="timeline-stat">
+                        <span>Success:</span>
+                        <span class="stat-value">94.7%</span>
+                    </div>
+                    <div class="timeline-stat">
+                        <span>Avg:</span>
+                        <span class="stat-value">2.3s</span>
+                    </div>
+                    <div class="timeline-stat">
+                        <span>Queue:</span>
+                        <span class="stat-value">12</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-content">
+                <!-- Models Timeline -->
+                <div class="timeline-track" data-category="models">
+                    <div class="track-header">
+                        <div class="track-info">
+                            <div class="track-icon models">M</div>
+                            <div class="track-details">
+                                <h4>Models & Data</h4>
+                                <p>Schemas, migrations, ORM</p>
+                            </div>
+                        </div>
+                        <div class="track-metrics">
+                            <div class="track-metric">
+                                <span class="track-metric-value">47</span>
+                                <span>Events</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">96%</span>
+                                <span>Success</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">2.1s</span>
+                                <span>Avg</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">3</span>
+                                <span>Queue</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="track-timeline">
+                        <div class="timeline-grid"></div>
+                        <div class="impact-zone high" style="left: 8%; width: 18%;"></div>
+                        <div class="impact-zone medium" style="left: 32%; width: 22%;"></div>
+                        <div class="impact-zone low" style="left: 60%; width: 25%;"></div>
+                        <div class="impact-zone medium" style="left: 88%; width: 8%;"></div>
+                        
+                        <div class="timeline-events">
+                            <div class="timeline-event code-analysis active" style="left: 12%;" data-event="schema-migration" data-time="14:23:45" data-status="Running" data-impact="High"></div>
+                            <div class="timeline-event semantic-analysis" style="left: 24%;" data-event="relation-check" data-time="14:21:32" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event static-check" style="left: 38%;" data-event="constraint-validation" data-time="14:19:18" data-status="Complete" data-impact="Low"></div>
+                            <div class="timeline-event type-check" style="left: 52%;" data-event="type-mapping" data-time="14:17:03" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 68%;" data-event="migration-deploy" data-time="14:15:41" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event security" style="left: 78%;" data-event="access-check" data-time="14:14:22" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 90%;" data-event="rollback-ready" data-time="14:13:07" data-status="Standby" data-impact="Low"></div>
+                            
+                            <div class="timeline-connection active" style="left: 12%; width: 12%;"></div>
+                            <div class="timeline-connection" style="left: 24%; width: 14%;"></div>
+                            <div class="timeline-connection active" style="left: 38%; width: 14%;"></div>
+                            <div class="timeline-connection" style="left: 52%; width: 16%;"></div>
+                            <div class="timeline-connection" style="left: 68%; width: 10%;"></div>
+                            <div class="timeline-connection" style="left: 78%; width: 12%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Views Timeline -->
+                <div class="timeline-track" data-category="views">
+                    <div class="track-header">
+                        <div class="track-info">
+                            <div class="track-icon views">V</div>
+                            <div class="track-details">
+                                <h4>Views & UI</h4>
+                                <p>Components, templates, styles</p>
+                            </div>
+                        </div>
+                        <div class="track-metrics">
+                            <div class="track-metric">
+                                <span class="track-metric-value">32</span>
+                                <span>Events</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">94%</span>
+                                <span>Success</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">1.8s</span>
+                                <span>Avg</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">1</span>
+                                <span>Queue</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="track-timeline">
+                        <div class="timeline-grid"></div>
+                        <div class="impact-zone medium" style="left: 15%; width: 25%;"></div>
+                        <div class="impact-zone low" style="left: 45%; width: 20%;"></div>
+                        <div class="impact-zone high" style="left: 70%; width: 15%;"></div>
+                        <div class="impact-zone low" style="left: 88%; width: 10%;"></div>
+                        
+                        <div class="timeline-events">
+                            <div class="timeline-event semantic-analysis" style="left: 18%;" data-event="a11y-scan" data-time="14:22:15" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event code-analysis active" style="left: 32%;" data-event="component-analysis" data-time="14:20:45" data-status="Running" data-impact="High"></div>
+                            <div class="timeline-event type-check" style="left: 48%;" data-event="prop-validation" data-time="14:18:33" data-status="Complete" data-impact="Low"></div>
+                            <div class="timeline-event static-check" style="left: 62%;" data-event="lint-check" data-time="14:16:21" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 75%;" data-event="cdn-deploy" data-time="14:14:56" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event security" style="left: 85%;" data-event="xss-scan" data-time="14:13:42" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 92%;" data-event="cache-invalidate" data-time="14:12:18" data-status="Complete" data-impact="Low"></div>
+                            
+                            <div class="timeline-connection" style="left: 18%; width: 14%;"></div>
+                            <div class="timeline-connection active" style="left: 32%; width: 16%;"></div>
+                            <div class="timeline-connection" style="left: 48%; width: 14%;"></div>
+                            <div class="timeline-connection" style="left: 62%; width: 13%;"></div>
+                            <div class="timeline-connection" style="left: 75%; width: 10%;"></div>
+                            <div class="timeline-connection" style="left: 85%; width: 7%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controllers Timeline -->
+                <div class="timeline-track" data-category="controllers">
+                    <div class="track-header">
+                        <div class="track-info">
+                            <div class="track-icon controllers">C</div>
+                            <div class="track-details">
+                                <h4>Controllers</h4>
+                                <p>Logic, validation, handlers</p>
+                            </div>
+                        </div>
+                        <div class="track-metrics">
+                            <div class="track-metric">
+                                <span class="track-metric-value">28</span>
+                                <span>Events</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">89%</span>
+                                <span>Success</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">3.2s</span>
+                                <span>Avg</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">5</span>
+                                <span>Queue</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="track-timeline">
+                        <div class="timeline-grid"></div>
+                        <div class="impact-zone high" style="left: 5%; width: 30%;"></div>
+                        <div class="impact-zone medium" style="left: 40%; width: 25%;"></div>
+                        <div class="impact-zone low" style="left: 70%; width: 20%;"></div>
+                        
+                        <div class="timeline-events">
+                            <div class="timeline-event code-analysis" style="left: 10%;" data-event="complexity-check" data-time="14:21:58" data-status="Warning" data-impact="High"></div>
+                            <div class="timeline-event semantic-analysis active" style="left: 22%;" data-event="business-logic" data-time="14:19:34" data-status="Running" data-impact="High"></div>
+                            <div class="timeline-event static-check" style="left: 38%;" data-event="security-audit" data-time="14:17:12" data-status="Complete" data-impact="Critical"></div>
+                            <div class="timeline-event type-check" style="left: 52%;" data-event="interface-check" data-time="14:15:47" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event security" style="left: 65%;" data-event="auth-validation" data-time="14:14:23" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event deployment" style="left: 78%;" data-event="logic-deploy" data-time="14:12:59" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 88%;" data-event="health-check" data-time="14:11:35" data-status="Complete" data-impact="Low"></div>
+                            
+                            <div class="timeline-connection active" style="left: 10%; width: 12%;"></div>
+                            <div class="timeline-connection" style="left: 22%; width: 16%;"></div>
+                            <div class="timeline-connection active" style="left: 38%; width: 14%;"></div>
+                            <div class="timeline-connection" style="left: 52%; width: 13%;"></div>
+                            <div class="timeline-connection" style="left: 65%; width: 13%;"></div>
+                            <div class="timeline-connection" style="left: 78%; width: 10%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Services Timeline -->
+                <div class="timeline-track" data-category="services">
+                    <div class="track-header">
+                        <div class="track-info">
+                            <div class="track-icon services">S</div>
+                            <div class="track-details">
+                                <h4>Services</h4>
+                                <p>Microservices, APIs, messaging</p>
+                            </div>
+                        </div>
+                        <div class="track-metrics">
+                            <div class="track-metric">
+                                <span class="track-metric-value">64</span>
+                                <span>Events</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">97%</span>
+                                <span>Success</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">1.9s</span>
+                                <span>Avg</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">2</span>
+                                <span>Queue</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="track-timeline">
+                        <div class="timeline-grid"></div>
+                        <div class="impact-zone low" style="left: 8%; width: 20%;"></div>
+                        <div class="impact-zone medium" style="left: 32%; width: 28%;"></div>
+                        <div class="impact-zone high" style="left: 65%; width: 18%;"></div>
+                        <div class="impact-zone low" style="left: 85%; width: 12%;"></div>
+                        
+                        <div class="timeline-events">
+                            <div class="timeline-event semantic-analysis" style="left: 12%;" data-event="service-discovery" data-time="14:23:21" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event code-analysis" style="left: 20%;" data-event="integration-test" data-time="14:21:47" data-status="Complete" data-impact="Low"></div>
+                            <div class="timeline-event static-check active" style="left: 36%;" data-event="contract-validation" data-time="14:19:23" data-status="Running" data-impact="High"></div>
+                            <div class="timeline-event type-check" style="left: 48%;" data-event="interface-check" data-time="14:17:58" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event security" style="left: 58%;" data-event="auth-check" data-time="14:16:34" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event deployment" style="left: 70%;" data-event="service-deploy" data-time="14:15:10" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event deployment" style="left: 78%;" data-event="load-balance" data-time="14:13:46" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 88%;" data-event="health-monitor" data-time="14:12:22" data-status="Complete" data-impact="Low"></div>
+                            
+                            <div class="timeline-connection" style="left: 12%; width: 8%;"></div>
+                            <div class="timeline-connection" style="left: 20%; width: 16%;"></div>
+                            <div class="timeline-connection active" style="left: 36%; width: 12%;"></div>
+                            <div class="timeline-connection" style="left: 48%; width: 10%;"></div>
+                            <div class="timeline-connection" style="left: 58%; width: 12%;"></div>
+                            <div class="timeline-connection" style="left: 70%; width: 8%;"></div>
+                            <div class="timeline-connection" style="left: 78%; width: 10%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- API Timeline -->
+                <div class="timeline-track" data-category="api">
+                    <div class="track-header">
+                        <div class="track-info">
+                            <div class="track-icon api">A</div>
+                            <div class="track-details">
+                                <h4>API Layer</h4>
+                                <p>Endpoints, auth, rate limiting</p>
+                            </div>
+                        </div>
+                        <div class="track-metrics">
+                            <div class="track-metric">
+                                <span class="track-metric-value">23</span>
+                                <span>Events</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">92%</span>
+                                <span>Success</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">2.7s</span>
+                                <span>Avg</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">1</span>
+                                <span>Queue</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="track-timeline">
+                        <div class="timeline-grid"></div>
+                        <div class="impact-zone high" style="left: 12%; width: 22%;"></div>
+                        <div class="impact-zone medium" style="left: 38%; width: 18%;"></div>
+                        <div class="impact-zone low" style="left: 60%; width: 25%;"></div>
+                        <div class="impact-zone medium" style="left: 88%; width: 10%;"></div>
+                        
+                        <div class="timeline-events">
+                            <div class="timeline-event code-analysis" style="left: 16%;" data-event="endpoint-analysis" data-time="14:22:33" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event semantic-analysis" style="left: 28%;" data-event="schema-validation" data-time="14:20:19" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event static-check" style="left: 42%;" data-event="security-scan" data-time="14:18:55" data-status="Complete" data-impact="Critical"></div>
+                            <div class="timeline-event type-check active" style="left: 52%;" data-event="response-check" data-time="14:17:31" data-status="Running" data-impact="Medium"></div>
+                            <div class="timeline-event security" style="left: 68%;" data-event="rate-limit-test" data-time="14:16:07" data-status="Complete" data-impact="Low"></div>
+                            <div class="timeline-event deployment" style="left: 78%;" data-event="gateway-deploy" data-time="14:14:43" data-status="Complete" data-impact="High"></div>
+                            <div class="timeline-event deployment" style="left: 90%;" data-event="docs-update" data-time="14:13:19" data-status="Complete" data-impact="Low"></div>
+                            
+                            <div class="timeline-connection active" style="left: 16%; width: 12%;"></div>
+                            <div class="timeline-connection" style="left: 28%; width: 14%;"></div>
+                            <div class="timeline-connection" style="left: 42%; width: 10%;"></div>
+                            <div class="timeline-connection active" style="left: 52%; width: 16%;"></div>
+                            <div class="timeline-connection" style="left: 68%; width: 10%;"></div>
+                            <div class="timeline-connection" style="left: 78%; width: 12%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Config Timeline -->
+                <div class="timeline-track" data-category="config">
+                    <div class="track-header">
+                        <div class="track-info">
+                            <div class="track-icon config">C</div>
+                            <div class="track-details">
+                                <h4>Configuration</h4>
+                                <p>Settings, env, secrets</p>
+                            </div>
+                        </div>
+                        <div class="track-metrics">
+                            <div class="track-metric">
+                                <span class="track-metric-value">12</span>
+                                <span>Events</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">98%</span>
+                                <span>Success</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">0.9s</span>
+                                <span>Avg</span>
+                            </div>
+                            <div class="track-metric">
+                                <span class="track-metric-value">0</span>
+                                <span>Queue</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="track-timeline">
+                        <div class="timeline-grid"></div>
+                        <div class="impact-zone medium" style="left: 10%; width: 35%;"></div>
+                        <div class="impact-zone low" style="left: 50%; width: 25%;"></div>
+                        <div class="impact-zone high" style="left: 80%; width: 15%;"></div>
+                        
+                        <div class="timeline-events">
+                            <div class="timeline-event semantic-analysis" style="left: 15%;" data-event="config-validation" data-time="14:21:05" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event static-check" style="left: 32%;" data-event="secret-scan" data-time="14:19:41" data-status="Complete" data-impact="Critical"></div>
+                            <div class="timeline-event security active" style="left: 55%;" data-event="key-rotation" data-time="14:18:17" data-status="Running" data-impact="High"></div>
+                            <div class="timeline-event deployment" style="left: 72%;" data-event="env-deploy" data-time="14:16:53" data-status="Complete" data-impact="Medium"></div>
+                            <div class="timeline-event deployment" style="left: 85%;" data-event="backup-config" data-time="14:15:29" data-status="Complete" data-impact="Low"></div>
+                            
+                            <div class="timeline-connection" style="left: 15%; width: 17%;"></div>
+                            <div class="timeline-connection" style="left: 32%; width: 23%;"></div>
+                            <div class="timeline-connection active" style="left: 55%; width: 17%;"></div>
+                            <div class="timeline-connection" style="left: 72%; width: 13%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Panel -->
+        <div class="metrics">
+            <div class="metrics-header">
+                <div class="metrics-title">Live Metrics</div>
+                <div class="metrics-summary">
+                    <span>Avg: 2.3s</span>
+                    <span>P95: 4.1s</span>
+                    <span>Errors: 23</span>
+                </div>
+            </div>
+            
+            <div class="metrics-content">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Build Success</div>
+                        <div class="metric-change positive">+2.3%</div>
+                    </div>
+                    <div class="metric-main">
+                        <div class="metric-value">94.7</div>
+                        <div class="metric-unit">%</div>
+                    </div>
+                    <div class="metric-description">Last 24h: 847 builds</div>
+                    <div class="metric-chart">
+                        <div class="chart-bar" style="height: 85%;"></div>
+                        <div class="chart-bar" style="height: 92%;"></div>
+                        <div class="chart-bar" style="height: 88%;"></div>
+                        <div class="chart-bar" style="height: 95%;"></div>
+                        <div class="chart-bar" style="height: 91%;"></div>
+                        <div class="chart-bar" style="height: 94%;"></div>
+                        <div class="chart-bar" style="height: 96%;"></div>
+                        <div class="chart-bar" style="height: 93%;"></div>
+                    </div>
+                    <div class="metric-details">
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">847</div>
+                            <div class="metric-detail-label">Total</div>
+                        </div>
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">45</div>
+                            <div class="metric-detail-label">Failed</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Response Time</div>
+                        <div class="metric-change negative">+0.3s</div>
+                    </div>
+                    <div class="metric-main">
+                        <div class="metric-value">2.4</div>
+                        <div class="metric-unit">s</div>
+                    </div>
+                    <div class="metric-description">P95: 4.1s, P99: 7.8s</div>
+                    <div class="metric-chart">
+                        <div class="chart-bar" style="height: 65%;"></div>
+                        <div class="chart-bar" style="height: 72%;"></div>
+                        <div class="chart-bar" style="height: 78%;"></div>
+                        <div class="chart-bar" style="height: 85%;"></div>
+                        <div class="chart-bar" style="height: 82%;"></div>
+                        <div class="chart-bar" style="height: 89%;"></div>
+                        <div class="chart-bar" style="height: 86%;"></div>
+                        <div class="chart-bar" style="height: 90%;"></div>
+                    </div>
+                    <div class="metric-details">
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">1.2s</div>
+                            <div class="metric-detail-label">Min</div>
+                        </div>
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">12.4s</div>
+                            <div class="metric-detail-label">Max</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Active Issues</div>
+                        <div class="metric-change negative">+5</div>
+                    </div>
+                    <div class="metric-main">
+                        <div class="metric-value">23</div>
+                        <div class="metric-unit"></div>
+                    </div>
+                    <div class="metric-description">Critical: 3, High: 8, Med: 12</div>
+                    <div class="metric-chart">
+                        <div class="chart-bar" style="height: 40%;"></div>
+                        <div class="chart-bar" style="height: 52%;"></div>
+                        <div class="chart-bar" style="height: 48%;"></div>
+                        <div class="chart-bar" style="height: 65%;"></div>
+                        <div class="chart-bar" style="height: 71%;"></div>
+                        <div class="chart-bar" style="height: 68%;"></div>
+                        <div class="chart-bar" style="height: 75%;"></div>
+                        <div class="chart-bar" style="height: 72%;"></div>
+                    </div>
+                    <div class="metric-details">
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">18</div>
+                            <div class="metric-detail-label">Resolved</div>
+                        </div>
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">2.4h</div>
+                            <div class="metric-detail-label">MTTR</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Deployment Rate</div>
+                        <div class="metric-change positive">+12%</div>
+                    </div>
+                    <div class="metric-main">
+                        <div class="metric-value">47</div>
+                        <div class="metric-unit">/week</div>
+                    </div>
+                    <div class="metric-description">Success: 94%, Rollback: 3</div>
+                    <div class="metric-chart">
+                        <div class="chart-bar" style="height: 78%;"></div>
+                        <div class="chart-bar" style="height: 85%;"></div>
+                        <div class="chart-bar" style="height: 92%;"></div>
+                        <div class="chart-bar" style="height: 88%;"></div>
+                        <div class="chart-bar" style="height: 95%;"></div>
+                        <div class="chart-bar" style="height: 91%;"></div>
+                        <div class="chart-bar" style="height: 94%;"></div>
+                        <div class="chart-bar" style="height: 97%;"></div>
+                    </div>
+                    <div class="metric-details">
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">44</div>
+                            <div class="metric-detail-label">Success</div>
+                        </div>
+                        <div class="metric-detail">
+                            <div class="metric-detail-value">2.1m</div>
+                            <div class="metric-detail-label">Avg Time</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Panel -->
+        <div class="alerts">
+            <div class="alerts-header">
+                <div class="alerts-title">Live Alerts</div>
+                <div class="alerts-count">
+                    <div class="alert-count critical">3</div>
+                    <div class="alert-count warning">8</div>
+                    <div class="alert-count info">12</div>
+                </div>
+            </div>
+            
+            <div class="alerts-content">
+                <div class="alert-item critical">
+                    <div class="alert-icon critical">!</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Response Time Critical</div>
+                            <div class="alert-time">2m</div>
+                        </div>
+                        <div class="alert-description">API /users/search exceeding 5s threshold consistently</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Impact: <strong>High</strong></div>
+                            <div class="alert-detail">Affected: <strong>2.3k users</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item critical">
+                    <div class="alert-icon critical">!</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Security Vulnerability</div>
+                            <div class="alert-time">5m</div>
+                        </div>
+                        <div class="alert-description">SQL injection vector detected in user controller</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Severity: <strong>Critical</strong></div>
+                            <div class="alert-detail">CVSS: <strong>9.1</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item warning">
+                    <div class="alert-icon warning">⚠</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Type Check Failures</div>
+                            <div class="alert-time">8m</div>
+                        </div>
+                        <div class="alert-description">23 type errors preventing build completion</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Module: <strong>controllers</strong></div>
+                            <div class="alert-detail">Build: <strong>Blocked</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item warning">
+                    <div class="alert-icon warning">⚠</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Memory Usage High</div>
+                            <div class="alert-time">12m</div>
+                        </div>
+                        <div class="alert-description">Service memory consumption at 87% of allocated limit</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Service: <strong>api-gateway</strong></div>
+                            <div class="alert-detail">Usage: <strong>3.2GB/3.7GB</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item info">
+                    <div class="alert-icon info">i</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Deployment Complete</div>
+                            <div class="alert-time">15m</div>
+                        </div>
+                        <div class="alert-description">Models v2.3.1 deployed successfully to production</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Version: <strong>v2.3.1</strong></div>
+                            <div class="alert-detail">Duration: <strong>2.4m</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item info">
+                    <div class="alert-icon info">i</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Service Discovery</div>
+                            <div class="alert-time">18m</div>
+                        </div>
+                        <div class="alert-description">3 new microservices registered and health checks passing</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Services: <strong>payment, auth, notify</strong></div>
+                            <div class="alert-detail">Status: <strong>Healthy</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item warning">
+                    <div class="alert-icon warning">⚠</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Code Complexity</div>
+                            <div class="alert-time">22m</div>
+                        </div>
+                        <div class="alert-description">Cyclomatic complexity exceeds threshold in payment handler</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Complexity: <strong>12.4 (>10)</strong></div>
+                            <div class="alert-detail">File: <strong>PaymentController.js</strong></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-item info">
+                    <div class="alert-icon info">i</div>
+                    <div class="alert-content">
+                        <div class="alert-header">
+                            <div class="alert-title">Cache Optimization</div>
+                            <div class="alert-time">25m</div>
+                        </div>
+                        <div class="alert-description">CDN cache hit rate improved to 94.7% after configuration update</div>
+                        <div class="alert-details">
+                            <div class="alert-detail">Hit Rate: <strong>94.7% (+3.2%)</strong></div>
+                            <div class="alert-detail">Bandwidth: <strong>-24%</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-header"></div>
+        <div class="tooltip-content"></div>
+    </div>
+
+    <script>
+        class DenseTimelineMonitor {
+            constructor() {
+                this.selectedCategories = new Set(['models']);
+                this.timeRange = '1h';
+                this.isLive = true;
+                this.eventQueue = [];
+                this.updateInterval = 1500; // Faster updates for dense monitoring
+                
+                this.initializeMonitor();
+            }
+            
+            initializeMonitor() {
+                this.setupEventListeners();
+                this.startHighFrequencyUpdates();
+                this.startEventSimulation();
+                this.initializeRealTimeData();
+                console.log('🚀 Dense Timeline Monitor initialized');
+            }
+            
+            setupEventListeners() {
+                // Time range controls
+                document.querySelectorAll('.time-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.changeTimeRange(btn));
+                });
+                
+                // Category filters
+                document.querySelectorAll('.category-item').forEach(item => {
+                    item.addEventListener('click', () => this.toggleCategory(item));
+                });
+                
+                // Timeline events with enhanced tooltip
+                document.querySelectorAll('.timeline-event').forEach(event => {
+                    event.addEventListener('mouseenter', (e) => this.showDetailedTooltip(e));
+                    event.addEventListener('mouseleave', () => this.hideTooltip());
+                    event.addEventListener('click', () => this.selectEvent(event));
+                });
+                
+                // Service items
+                document.querySelectorAll('.service-item').forEach(item => {
+                    item.addEventListener('click', () => this.selectService(item));
+                    item.addEventListener('mouseenter', (e) => this.showServiceTooltip(e));
+                    item.addEventListener('mouseleave', () => this.hideTooltip());
+                });
+                
+                // Alert items
+                document.querySelectorAll('.alert-item').forEach(alert => {
+                    alert.addEventListener('click', () => this.handleAlert(alert));
+                    alert.addEventListener('mouseenter', (e) => this.showAlertTooltip(e));
+                    alert.addEventListener('mouseleave', () => this.hideTooltip());
+                });
+                
+                // Chart bars with detailed hover
+                document.querySelectorAll('.chart-bar').forEach((bar, index) => {
+                    bar.addEventListener('mouseenter', (e) => this.showChartTooltip(e, index));
+                    bar.addEventListener('mouseleave', () => this.hideTooltip());
+                });
+                
+                // Metric cards
+                document.querySelectorAll('.metric-card').forEach(card => {
+                    card.addEventListener('click', () => this.expandMetric(card));
+                });
+                
+                // Impact zones
+                document.querySelectorAll('.impact-zone').forEach(zone => {
+                    zone.addEventListener('click', () => this.analyzeImpactZone(zone));
+                    zone.addEventListener('mouseenter', (e) => this.showImpactTooltip(e));
+                    zone.addEventListener('mouseleave', () => this.hideTooltip());
+                });
+                
+                // Search functionality
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.performAdvancedSearch(e.target.value);
+                });
+            }
+            
+            showDetailedTooltip(e) {
+                const event = e.target;
+                const eventData = this.getEventData(event);
+                const tooltip = document.getElementById('tooltip');
+                
+                tooltip.querySelector('.tooltip-header').textContent = eventData.title;
+                tooltip.querySelector('.tooltip-content').innerHTML = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Time:</span>
+                        <span class="tooltip-value">${eventData.time}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Status:</span>
+                        <span class="tooltip-value">${eventData.status}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Impact:</span>
+                        <span class="tooltip-value">${eventData.impact}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Duration:</span>
+                        <span class="tooltip-value">${eventData.duration}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">CPU:</span>
+                        <span class="tooltip-value">${eventData.cpu}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Memory:</span>
+                        <span class="tooltip-value">${eventData.memory}MB</span>
+                    </div>
+                `;
+                
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+                tooltip.classList.add('show');
+            }
+            
+            showServiceTooltip(e) {
+                const tooltip = document.getElementById('tooltip');
+                const serviceData = this.generateServiceData();
+                
+                tooltip.querySelector('.tooltip-header').textContent = 'Service Details';
+                tooltip.querySelector('.tooltip-content').innerHTML = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Uptime:</span>
+                        <span class="tooltip-value">${serviceData.uptime}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Requests/min:</span>
+                        <span class="tooltip-value">${serviceData.requests}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Error Rate:</span>
+                        <span class="tooltip-value">${serviceData.errorRate}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Last Deploy:</span>
+                        <span class="tooltip-value">${serviceData.lastDeploy}</span>
+                    </div>
+                `;
+                
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+                tooltip.classList.add('show');
+            }
+            
+            showAlertTooltip(e) {
+                const tooltip = document.getElementById('tooltip');
+                const alertData = this.generateAlertData();
+                
+                tooltip.querySelector('.tooltip-header').textContent = 'Alert Context';
+                tooltip.querySelector('.tooltip-content').innerHTML = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Triggered:</span>
+                        <span class="tooltip-value">${alertData.triggered}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Frequency:</span>
+                        <span class="tooltip-value">${alertData.frequency}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Similar:</span>
+                        <span class="tooltip-value">${alertData.similar}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Auto-resolve:</span>
+                        <span class="tooltip-value">${alertData.autoResolve}</span>
+                    </div>
+                `;
+                
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+                tooltip.classList.add('show');
+            }
+            
+            showChartTooltip(e, index) {
+                const tooltip = document.getElementById('tooltip');
+                const value = Math.floor(Math.random() * 100);
+                const timestamp = new Date(Date.now() - index * 3600000).toLocaleString();
+                
+                tooltip.querySelector('.tooltip-header').textContent = 'Metric Point';
+                tooltip.querySelector('.tooltip-content').innerHTML = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Value:</span>
+                        <span class="tooltip-value">${value}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Time:</span>
+                        <span class="tooltip-value">${timestamp}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Trend:</span>
+                        <span class="tooltip-value">↗ +2.3%</span>
+                    </div>
+                `;
+                
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+                tooltip.classList.add('show');
+            }
+            
+            showImpactTooltip(e) {
+                const zone = e.target;
+                const impactLevel = zone.classList.contains('high') ? 'High' : 
+                                 zone.classList.contains('medium') ? 'Medium' : 'Low';
+                const tooltip = document.getElementById('tooltip');
+                
+                tooltip.querySelector('.tooltip-header').textContent = `${impactLevel} Impact Zone`;
+                tooltip.querySelector('.tooltip-content').innerHTML = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Affected Users:</span>
+                        <span class="tooltip-value">${Math.floor(Math.random() * 5000)}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Services:</span>
+                        <span class="tooltip-value">${Math.floor(Math.random() * 10) + 1}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Duration:</span>
+                        <span class="tooltip-value">${Math.floor(Math.random() * 30) + 1}m</span>
+                    </div>
+                `;
+                
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 10) + 'px';
+                tooltip.classList.add('show');
+            }
+            
+            hideTooltip() {
+                document.getElementById('tooltip').classList.remove('show');
+            }
+            
+            getEventData(event) {
+                return {
+                    title: this.formatEventTitle(event.dataset.event),
+                    time: event.dataset.time || new Date().toLocaleTimeString(),
+                    status: event.dataset.status || 'Running',
+                    impact: event.dataset.impact || 'Medium',
+                    duration: `${Math.random() * 5 + 0.5}s`.slice(0, 4),
+                    cpu: Math.floor(Math.random() * 40 + 10),
+                    memory: Math.floor(Math.random() * 500 + 100)
+                };
+            }
+            
+            formatEventTitle(eventType) {
+                const titles = {
+                    'schema-migration': 'Database Schema Migration',
+                    'a11y-scan': 'Accessibility Compliance Scan',
+                    'complexity-check': 'Code Complexity Analysis',
+                    'service-discovery': 'Microservice Discovery',
+                    'endpoint-analysis': 'API Endpoint Performance',
+                    'config-validation': 'Configuration Validation'
+                };
+                
+                return titles[eventType] || eventType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+            
+            generateServiceData() {
+                return {
+                    uptime: `${Math.floor(Math.random() * 365)}d ${Math.floor(Math.random() * 24)}h`,
+                    requests: Math.floor(Math.random() * 1000 + 100),
+                    errorRate: (Math.random() * 5).toFixed(2),
+                    lastDeploy: `${Math.floor(Math.random() * 48)} hours ago`
+                };
+            }
+            
+            generateAlertData() {
+                return {
+                    triggered: `${Math.floor(Math.random() * 60)} minutes ago`,
+                    frequency: `${Math.floor(Math.random() * 10 + 1)} times today`,
+                    similar: Math.floor(Math.random() * 5),
+                    autoResolve: Math.random() > 0.5 ? 'Enabled' : 'Disabled'
+                };
+            }
+            
+            changeTimeRange(btn) {
+                this.timeRange = btn.dataset.range;
+                
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                this.updateTimelineData();
+                console.log(`📅 Time range: ${this.timeRange}`);
+            }
+            
+            toggleCategory(item) {
+                const category = item.dataset.category;
+                
+                if (this.selectedCategories.has(category)) {
+                    this.selectedCategories.delete(category);
+                    item.classList.remove('active');
+                } else {
+                    this.selectedCategories.add(category);
+                    item.classList.add('active');
+                }
+                
+                this.updateTimelineVisibility();
+            }
+            
+            updateTimelineVisibility() {
+                document.querySelectorAll('.timeline-track').forEach(track => {
+                    const category = track.dataset.category;
+                    if (this.selectedCategories.has(category)) {
+                        track.classList.remove('hidden');
+                    } else {
+                        track.classList.add('hidden');
+                    }
+                });
+            }
+            
+            selectEvent(event) {
+                document.querySelectorAll('.timeline-event').forEach(e => e.classList.remove('selected'));
+                event.classList.add('selected');
+                
+                // Pulse effect
+                event.classList.add('pulse-update');
+                setTimeout(() => event.classList.remove('pulse-update'), 600);
+            }
+            
+            selectService(item) {
+                item.classList.add('live-update');
+                setTimeout(() => item.classList.remove('live-update'), 400);
+            }
+            
+            handleAlert(alert) {
+                alert.style.opacity = '0.6';
+                alert.classList.add('live-update');
+                setTimeout(() => alert.classList.remove('live-update'), 400);
+            }
+            
+            expandMetric(card) {
+                card.classList.add('pulse-update');
+                setTimeout(() => card.classList.remove('pulse-update'), 600);
+            }
+            
+            analyzeImpactZone(zone) {
+                zone.style.opacity = '0.25';
+                setTimeout(() => zone.style.opacity = '', 1000);
+            }
+            
+            performAdvancedSearch(query) {
+                if (!query.trim()) {
+                    document.querySelectorAll('.timeline-track').forEach(track => {
+                        track.style.opacity = '1';
+                    });
+                    return;
+                }
+                
+                const searchTerms = query.toLowerCase().split(' ');
+                
+                document.querySelectorAll('.timeline-track').forEach(track => {
+                    const trackText = track.textContent.toLowerCase();
+                    const matches = searchTerms.some(term => trackText.includes(term));
+                    
+                    track.style.opacity = matches ? '1' : '0.3';
+                    
+                    if (matches) {
+                        track.classList.add('live-update');
+                        setTimeout(() => track.classList.remove('live-update'), 400);
+                    }
+                });
+            }
+            
+            updateTimelineData() {
+                const multipliers = { '1h': 0.2, '6h': 0.5, '24h': 1, '7d': 2.5, '30d': 5 };
+                const multiplier = multipliers[this.timeRange] || 1;
+                
+                document.querySelectorAll('.timeline-event').forEach(event => {
+                    const currentLeft = parseFloat(event.style.left);
+                    const randomOffset = (Math.random() - 0.5) * 8 * multiplier;
+                    const newLeft = Math.max(5, Math.min(95, currentLeft + randomOffset));
+                    
+                    event.style.left = newLeft + '%';
+                    event.classList.add('live-update');
+                    
+                    setTimeout(() => event.classList.remove('live-update'), 400);
+                });
+                
+                this.updateMetrics();
+            }
+            
+            startHighFrequencyUpdates() {
+                // High-frequency real-time updates
+                setInterval(() => {
+                    if (this.isLive) {
+                        this.simulateRealTimeEvent();
+                        this.updateLiveMetrics();
+                        this.updateSystemStats();
+                    }
+                }, this.updateInterval);
+                
+                // Service status updates
+                setInterval(() => {
+                    this.updateServiceStatuses();
+                }, 3000);
+                
+                // Alert generation
+                setInterval(() => {
+                    if (Math.random() > 0.85) {
+                        this.generateRealTimeAlert();
+                    }
+                }, 5000);
+            }
+            
+            simulateRealTimeEvent() {
+                const events = document.querySelectorAll('.timeline-event');
+                const randomEvent = events[Math.floor(Math.random() * events.length)];
+                
+                if (randomEvent && Math.random() > 0.4) {
+                    randomEvent.classList.add('active');
+                    randomEvent.classList.add('live-update');
+                    
+                    setTimeout(() => {
+                        randomEvent.classList.remove('active');
+                        randomEvent.classList.remove('live-update');
+                    }, 1000);
+                }
+            }
+            
+            updateLiveMetrics() {
+                // Update header stats
+                document.querySelectorAll('.metric-inline').forEach(metric => {
+                    if (Math.random() > 0.7) {
+                        const currentValue = metric.textContent;
+                        const isPercentage = currentValue.includes('%');
+                        const isRate = currentValue.includes('/');
+                        
+                        let numericValue = parseFloat(currentValue);
+                        let change = (Math.random() - 0.5) * 0.2;
+                        
+                        if (isPercentage) {
+                            const newValue = Math.max(0, Math.min(100, numericValue + change));
+                            metric.textContent = newValue.toFixed(1) + '%';
+                        } else if (isRate) {
+                            const newValue = Math.max(0, numericValue + change * 5);
+                            metric.textContent = Math.floor(newValue) + '/min';
+                        } else {
+                            const newValue = Math.max(0, numericValue + change * 100);
+                            metric.textContent = Math.floor(newValue);
+                        }
+                        
+                        metric.parentElement.classList.add('live-update');
+                        setTimeout(() => metric.parentElement.classList.remove('live-update'), 300);
+                    }
+                });
+                
+                // Update metric cards
+                document.querySelectorAll('.metric-value').forEach(value => {
+                    if (Math.random() > 0.8) {
+                        const currentValue = parseFloat(value.textContent);
+                        const change = (Math.random() - 0.5) * 0.1;
+                        const newValue = Math.max(0, currentValue + change);
+                        
+                        value.textContent = newValue.toFixed(1);
+                        value.classList.add('live-update');
+                        
+                        setTimeout(() => value.classList.remove('live-update'), 300);
+                    }
+                });
+            }
+            
+            updateSystemStats() {
+                // Update dense info bar
+                document.querySelectorAll('.info-value').forEach(stat => {
+                    if (Math.random() > 0.6) {
+                        const currentValue = stat.textContent;
+                        const isPercentage = currentValue.includes('%');
+                        const isMemory = currentValue.includes('GB') || currentValue.includes('MB');
+                        const isRate = currentValue.includes('/s');
+                        
+                        let numericValue = parseFloat(currentValue);
+                        let change = (Math.random() - 0.5) * 0.1;
+                        
+                        if (isPercentage) {
+                            const newValue = Math.max(0, Math.min(100, numericValue + change * 10));
+                            stat.textContent = Math.floor(newValue) + '%';
+                        } else if (isMemory) {
+                            const newValue = Math.max(0, numericValue + change);
+                            stat.textContent = newValue.toFixed(1) + (currentValue.includes('GB') ? 'GB' : 'MB');
+                        } else if (isRate) {
+                            const newValue = Math.max(0, numericValue + change * 2);
+                            stat.textContent = newValue.toFixed(1) + 'MB/s';
+                        }
+                        
+                        stat.classList.add('live-update');
+                        setTimeout(() => stat.classList.remove('live-update'), 200);
+                    }
+                });
+                
+                // Update mini charts
+                document.querySelectorAll('.mini-bar').forEach(bar => {
+                    if (Math.random() > 0.7) {
+                        const newHeight = Math.random() * 80 + 20;
+                        bar.style.height = newHeight + '%';
+                    }
+                });
+            }
+            
+            updateServiceStatuses() {
+                document.querySelectorAll('.service-status').forEach(status => {
+                    if (Math.random() > 0.95) {
+                        const statuses = ['healthy', 'warning', 'error'];
+                        const currentStatus = statuses.find(s => status.classList.contains(s));
+                        
+                        // Very small chance to change status
+                        if (Math.random() > 0.8) {
+                            status.classList.remove(currentStatus);
+                            const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                            status.classList.add(newStatus);
+                            
+                            status.classList.add('live-update');
+                            setTimeout(() => status.classList.remove('live-update'), 400);
+                        }
+                    }
+                });
+            }
+            
+            generateRealTimeAlert() {
+                console.log('🚨 New real-time alert generated');
+                
+                // Could add new alert to DOM here
+                const alertsCount = document.querySelectorAll('.alert-count');
+                alertsCount.forEach(count => {
+                    count.classList.add('live-update');
+                    setTimeout(() => count.classList.remove('live-update'), 300);
+                });
+            }
+            
+            updateMetrics() {
+                document.querySelectorAll('.chart-bar').forEach(bar => {
+                    const newHeight = Math.random() * 80 + 20;
+                    bar.style.height = newHeight + '%';
+                });
+            }
+            
+            startEventSimulation() {
+                setInterval(() => {
+                    if (Math.random() > 0.7) {
+                        this.addRealTimeEvent();
+                    }
+                }, 8000);
+            }
+            
+            addRealTimeEvent() {
+                const events = document.querySelectorAll('.timeline-event');
+                const newEvent = events[Math.floor(Math.random() * events.length)];
+                
+                if (newEvent) {
+                    newEvent.classList.add('active');
+                    newEvent.classList.add('pulse-update');
+                    
+                    setTimeout(() => {
+                        newEvent.classList.remove('active');
+                        newEvent.classList.remove('pulse-update');
+                    }, 1200);
+                }
+            }
+            
+            initializeRealTimeData() {
+                // Initialize with current data
+                this.updateMetrics();
+                this.updateLiveMetrics();
+                this.updateSystemStats();
+            }
+        }
+        
+        // Initialize the dense monitor
+        document.addEventListener('DOMContentLoaded', () => {
+            const monitor = new DenseTimelineMonitor();
+            window.denseMonitor = monitor; // For debugging
+        });
+    </script>
+</body>
+</html>

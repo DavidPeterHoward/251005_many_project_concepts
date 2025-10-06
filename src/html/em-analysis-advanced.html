@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bra Underwire Electromagnetic Analysis (v2)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: white;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .advanced-controls {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .param-group {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .param-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #a8dadc;
+            font-weight: 600;
+        }
+
+        .param-group select, .param-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .slider-container {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .slider-value {
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background: rgba(102, 126, 234, 0.8);
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .visualization-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .viz-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .viz-title {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #f093fb;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 5px;
+        }
+
+        .toggle-btn {
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a2e, #0f0f1e);
+            border-radius: 15px;
+            padding: 15px;
+            min-height: 350px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .viz-canvas {
+            width: 100%;
+            height: 350px;
+            border-radius: 10px;
+        }
+
+        .overlay-info {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            max-width: 200px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .metric-box:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .metric-value {
+            font-size: 1.6em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .physics-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .physics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .physics-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .physics-title {
+            color: #f093fb;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .physics-params {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .param-name {
+            color: #a8dadc;
+        }
+
+        .param-value {
+            text-align: right;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: rgba(102, 126, 234, 0.3);
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .comparison-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .polarization-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(102, 126, 234, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.8); }
+        }
+
+        @keyframes rotate-3d {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        @keyframes wave-propagate {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .animated-element {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @media (max-width: 968px) {
+            .visualization-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-content.active {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Bra Underwire Electromagnetic Analysis (v2)</h1>
+            <p>Multi-Dimensional Radiation Pattern Analysis & Material Physics</p>
+        </div>
+
+        <div class="advanced-controls">
+            <div class="control-tabs">
+                <button class="tab-button active" onclick="switchTab('geometry')">Geometry</button>
+                <button class="tab-button" onclick="switchTab('material')">Material Properties</button>
+                <button class="tab-button" onclick="switchTab('frequency')">Frequency Analysis</button>
+                <button class="tab-button" onclick="switchTab('environment')">Environment</button>
+            </div>
+
+            <div id="geometry-tab" class="tab-content active">
+                <div class="param-group">
+                    <label class="param-label">Cup Size</label>
+                    <select id="cupSize" onchange="calculate()">
+                        <option value="AA">AA Cup (28-30)</option>
+                        <option value="A">A Cup (30-32)</option>
+                        <option value="B">B Cup (32-34)</option>
+                        <option value="C" selected>C Cup (34-36)</option>
+                        <option value="D">D Cup (36-38)</option>
+                        <option value="DD">DD Cup (38-40)</option>
+                        <option value="DDD">DDD Cup (40-42)</option>
+                        <option value="E">E Cup (42-44)</option>
+                    </select>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Wire Curvature</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="curvatureVal">180°</span>
+                        <input type="range" id="curvature" min="120" max="240" value="180" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Wire Diameter (mm)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="diameterVal">0.9</span>
+                        <input type="range" id="diameter" min="0.5" max="2.0" step="0.1" value="0.9" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Body Distance (mm)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="distanceVal">2</span>
+                        <input type="range" id="bodyDistance" min="0.5" max="10" step="0.5" value="2" oninput="calculate()">
+                    </div>
+                </div>
+            </div>
+
+            <div id="material-tab" class="tab-content">
+                <div class="param-group">
+                    <label class="param-label">Wire Material</label>
+                    <select id="material" onchange="calculate()">
+                        <option value="copper">Copper C110 (σ=59.6 MS/m)</option>
+                        <option value="steel" selected>Stainless Steel 316L</option>
+                        <option value="aluminum">Aluminum 6061-T6</option>
+                        <option value="titanium">Titanium Grade 2</option>
+                        <option value="nitinol">Nitinol (NiTi)</option>
+                        <option value="bronze">Phosphor Bronze</option>
+                    </select>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Coating Type</label>
+                    <select id="coating" onchange="calculate()">
+                        <option value="none">Bare Metal</option>
+                        <option value="nylon" selected>Nylon (50μm)</option>
+                        <option value="silicone">Silicone (100μm)</option>
+                        <option value="ptfe">PTFE (25μm)</option>
+                    </select>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Fabric Type</label>
+                    <select id="fabric" onchange="calculate()">
+                        <option value="cotton">Cotton (εr=1.3)</option>
+                        <option value="polyester" selected>Polyester (εr=2.8)</option>
+                        <option value="nylon">Nylon (εr=3.1)</option>
+                        <option value="silk">Silk (εr=1.8)</option>
+                    </select>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Surface Finish</label>
+                    <select id="finish" onchange="calculate()">
+                        <option value="polished" selected>Polished</option>
+                        <option value="matte">Matte</option>
+                        <option value="oxidized">Oxidized</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="frequency-tab" class="tab-content">
+                <div class="param-group">
+                    <label class="param-label">Operating Frequency (MHz)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="freqVal">2400</span>
+                        <input type="range" id="frequency" min="100" max="6000" value="2400" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Power Level (mW)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="powerVal">100</span>
+                        <input type="range" id="power" min="1" max="1000" value="100" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Bandwidth (MHz)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="bwVal">100</span>
+                        <input type="range" id="bw" min="10" max="500" value="100" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Modulation</label>
+                    <select id="modulation" onchange="calculate()">
+                        <option value="cw" selected>Continuous Wave</option>
+                        <option value="pulsed">Pulsed (50% duty)</option>
+                        <option value="qam">QAM</option>
+                        <option value="ofdm">OFDM</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="environment-tab" class="tab-content">
+                <div class="param-group">
+                    <label class="param-label">Temperature (°C)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="tempVal">24</span>
+                        <input type="range" id="temp" min="15" max="40" value="24" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Humidity (%)</label>
+                    <div class="slider-container">
+                        <span class="slider-value" id="humidVal">50</span>
+                        <input type="range" id="humidity" min="20" max="95" value="50" oninput="calculate()">
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Body Composition</label>
+                    <select id="bodyType" onchange="calculate()">
+                        <option value="average" selected>Average (εr=45)</option>
+                        <option value="athletic">Athletic (εr=52)</option>
+                        <option value="highfat">High Fat (εr=38)</option>
+                        <option value="elderly">Elderly (εr=41)</option>
+                    </select>
+                </div>
+
+                <div class="param-group">
+                    <label class="param-label">Activity Level</label>
+                    <select id="activity" onchange="calculate()">
+                        <option value="rest" selected>At Rest</option>
+                        <option value="walking">Walking</option>
+                        <option value="exercise">Exercise</option>
+                        <option value="running">Running</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="visualization-grid">
+            <div class="viz-panel">
+                <div class="viz-title">
+                    <span>3D Radiation Pattern</span>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" onclick="setView('polar')">Polar</button>
+                        <button class="toggle-btn" onclick="setView('3d')">3D</button>
+                        <button class="toggle-btn" onclick="setView('elevation')">Elevation</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="patternCanvas" class="viz-canvas"></canvas>
+                    <div class="overlay-info">
+                        <div style="color: #f093fb; font-weight: bold; margin-bottom: 5px;">Live Pattern</div>
+                        <div>Freq: <span id="infoFreq">2400</span> MHz</div>
+                        <div>Material: <span id="infoMat">Steel</span></div>
+                        <div>View: <span id="infoView">Polar</span></div>
+                    </div>
+                </div>
+                <div class="metrics-row">
+                    <div class="metric-box">
+                        <div class="metric-value" id="gainMetric">-8.3</div>
+                        <div class="metric-label">Peak Gain (dBi)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="directivityMetric">2.8</div>
+                        <div class="metric-label">Directivity (dBi)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="fbMetric">-9.2</div>
+                        <div class="metric-label">F/B Ratio (dB)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="beamwidthMetric">85°</div>
+                        <div class="metric-label">3dB Beamwidth</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viz-panel">
+                <div class="viz-title">
+                    <span>Current Distribution & Fields</span>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" onclick="setCurrentView('current')">Current</button>
+                        <button class="toggle-btn" onclick="setCurrentView('efield')">E-Field</button>
+                        <button class="toggle-btn" onclick="setCurrentView('hfield')">H-Field</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="currentCanvas" class="viz-canvas"></canvas>
+                    <div class="overlay-info">
+                        <div style="color: #f093fb; font-weight: bold; margin-bottom: 5px;">Field Analysis</div>
+                        <div>Max I: <span id="maxCurrent">45</span> mA</div>
+                        <div>Phase: <span id="phaseInfo">Uniform</span></div>
+                        <div>Distribution: <span id="distInfo">Sinusoidal</span></div>
+                    </div>
+                </div>
+                <div class="metrics-row">
+                    <div class="metric-box">
+                        <div class="metric-value" id="zInput">42-j128</div>
+                        <div class="metric-label">Input Z (Ω)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="vswrMetric">3.24</div>
+                        <div class="metric-label">VSWR</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="rlMetric">-4.8</div>
+                        <div class="metric-label">Return Loss (dB)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="effMetric">15.2</div>
+                        <div class="metric-label">Efficiency (%)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viz-panel">
+                <div class="viz-title">
+                    <span>SAR Distribution & Thermal</span>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" onclick="setSARView('distribution')">SAR Map</button>
+                        <button class="toggle-btn" onclick="setSARView('thermal')">Thermal</button>
+                        <button class="toggle-btn" onclick="setSARView('contour')">Contours</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="sarCanvas" class="viz-canvas"></canvas>
+                    <div class="overlay-info">
+                        <div style="color: #f093fb; font-weight: bold; margin-bottom: 5px;">SAR Analysis</div>
+                        <div>Peak: <span id="peakSAR">0.34</span> W/kg</div>
+                        <div>Avg: <span id="avgSAR">0.12</span> W/kg</div>
+                        <div>Status: <span id="sarStatus" style="color: #4caf50;">SAFE</span></div>
+                    </div>
+                </div>
+                <div class="metrics-row">
+                    <div class="metric-box">
+                        <div class="metric-value" id="sar1gMetric">0.34</div>
+                        <div class="metric-label">SAR 1g (W/kg)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="sar10gMetric">0.18</div>
+                        <div class="metric-label">SAR 10g (W/kg)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="tempRiseMetric">0.3</div>
+                        <div class="metric-label">ΔT (°C)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="hotspotMetric">37.5</div>
+                        <div class="metric-label">Hotspot (°C)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viz-panel">
+                <div class="viz-title">
+                    <span>Smith Chart & Impedance</span>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" onclick="setSmithView('impedance')">Z-Chart</button>
+                        <button class="toggle-btn" onclick="setSmithView('admittance')">Y-Chart</button>
+                        <button class="toggle-btn" onclick="setSmithView('vswr')">VSWR Circles</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="smithCanvas" class="viz-canvas"></canvas>
+                    <div class="overlay-info">
+                        <div style="color: #f093fb; font-weight: bold; margin-bottom: 5px;">Impedance</div>
+                        <div>Z: <span id="smithZ">42-j128</span> Ω</div>
+                        <div>Γ: <span id="reflCoeff">0.65</span></div>
+                        <div>Match: <span id="matchQuality">Poor</span></div>
+                    </div>
+                </div>
+                <div class="metrics-row">
+                    <div class="metric-box">
+                        <div class="metric-value" id="rRadMetric">2.8</div>
+                        <div class="metric-label">R_rad (Ω)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="qMetric">28</div>
+                        <div class="metric-label">Q Factor</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="bwMetric">85</div>
+                        <div class="metric-label">BW (MHz)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-value" id="resFreqMetric">2.15</div>
+                        <div class="metric-label">f₀ (GHz)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="physics-panel full-width">
+            <div class="viz-title">Underwire Physical Parameters & Material Comparison</div>
+            <div class="physics-grid">
+                <div class="physics-card">
+                    <div class="physics-title">Antenna Characteristics</div>
+                    <div class="physics-params">
+                        <span class="param-name">Wire Length:</span>
+                        <span class="param-value" id="wireLength">18.5 cm</span>
+                        <span class="param-name">Electrical Length:</span>
+                        <span class="param-value" id="elecLength">0.148λ</span>
+                        <span class="param-name">Wavelength:</span>
+                        <span class="param-value" id="wavelength">12.5 cm</span>
+                        <span class="param-name">Skin Depth:</span>
+                        <span class="param-value" id="skinDepth">6.2 μm</span>
+                        <span class="param-name">Curvature:</span>
+                        <span class="param-value" id="curvatureParam">180°</span>
+                        <span class="param-name">Effective Area:</span>
+                        <span class="param-value" id="effArea">0.024 m²</span>
+                    </div>
+                </div>
+
+                <div class="physics-card">
+                    <div class="physics-title">Material Physics</div>
+                    <div class="physics-params">
+                        <span class="param-name">Conductivity:</span>
+                        <span class="param-value" id="conductivity">1.4 MS/m</span>
+                        <span class="param-name">Permeability:</span>
+                        <span class="param-value" id="permeability">μᵣ = 1.003</span>
+                        <span class="param-name">Loss Tangent:</span>
+                        <span class="param-value" id="lossTan">0.0024</span>
+                        <span class="param-name">Ohmic Loss:</span>
+                        <span class="param-value" id="ohmicLoss">0.8 dB</span>
+                        <span class="param-name">Surface Roughness:</span>
+                        <span class="param-value" id="roughness">1.2 μm</span>
+                        <span class="param-name">Coating Loss:</span>
+                        <span class="param-value" id="coatingLoss">0.3 dB</span>
+                    </div>
+                </div>
+
+                <div class="physics-card">
+                    <div class="physics-title">Body Coupling</div>
+                    <div class="physics-params">
+                        <span class="param-name">Coupling Factor:</span>
+                        <span class="param-value" id="couplingFactor">0.35</span>
+                        <span class="param-name">Tissue εᵣ:</span>
+                        <span class="param-value" id="tissuePermit">45.2</span>
+                        <span class="param-name">Tissue σ:</span>
+                        <span class="param-value" id="tissueCond">0.69 S/m</span>
+                        <span class="param-name">Detuning:</span>
+                        <span class="param-value" id="detuning">-15.2%</span>
+                        <span class="param-name">Body Loss:</span>
+                        <span class="param-value" id="bodyLoss">2.4 dB</span>
+                        <span class="param-name">Near-field:</span>
+                        <span class="param-value" id="nearFieldStr">145 V/m</span>
+                    </div>
+                </div>
+
+                <div class="physics-card">
+                    <div class="physics-title">Polarization & Field</div>
+                    <div class="physics-params">
+                        <span class="param-name">Polarization:</span>
+                        <span class="param-value"><span class="polarization-indicator" style="background: linear-gradient(90deg, #667eea, #f093fb);"></span>Mixed</span>
+                        <span class="param-name">Vertical:</span>
+                        <span class="param-value" id="vertPol">75%</span>
+                        <span class="param-name">Horizontal:</span>
+                        <span class="param-value" id="horizPol">25%</span>
+                        <span class="param-name">Cross-pol:</span>
+                        <span class="param-value" id="crossPol">-18 dB</span>
+                        <span class="param-name">Axial Ratio:</span>
+                        <span class="param-value" id="axialRatio">3.2 dB</span>
+                        <span class="param-name">Polarization Loss:</span>
+                        <span class="param-value" id="polLoss">0.5 dB</span>
+                    </div>
+                </div>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Conductivity</th>
+                        <th>Efficiency</th>
+                        <th>Peak Gain</th>
+                        <th>VSWR</th>
+                        <th>Bandwidth</th>
+                        <th>Cost Factor</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonBody">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentView = 'polar';
+        let currentFieldView = 'current';
+        let currentSARView = 'distribution';
+        let currentSmithView = 'impedance';
+        let animationId;
+
+        const materials = {
+            copper: { conductivity: 59.6, permeability: 1.0, efficiency: 0.28, color: '#ff6b6b', cost: 2 },
+            steel: { conductivity: 1.4, permeability: 1.003, efficiency: 0.10, color: '#96ceb4', cost: 1 },
+            aluminum: { conductivity: 37.7, permeability: 1.0, efficiency: 0.22, color: '#4ecdc4', cost: 1 },
+            titanium: { conductivity: 2.4, permeability: 1.0001, efficiency: 0.065, color: '#ffd700', cost: 4 },
+            nitinol: { conductivity: 0.83, permeability: 1.002, efficiency: 0.055, color: '#f093fb', cost: 5 },
+            bronze: { conductivity: 20.0, permeability: 1.0, efficiency: 0.18, color: '#dda15e', cost: 2 }
+        };
+
+        const cupSizes = {
+            AA: { wireLength: 14.2, circumference: 68 },
+            A: { wireLength: 15.8, circumference: 71 },
+            B: { wireLength: 17.1, circumference: 74 },
+            C: { wireLength: 18.5, circumference: 77 },
+            D: { wireLength: 20.2, circumference: 81 },
+            DD: { wireLength: 22.1, circumference: 86 },
+            DDD: { wireLength: 24.5, circumference: 91 },
+            E: { wireLength: 26.8, circumference: 97 }
+        };
+
+        const tissueProps = {
+            average: { permittivity: 45.2, conductivity: 0.69 },
+            athletic: { permittivity: 52.7, conductivity: 0.89 },
+            highfat: { permittivity: 38.1, conductivity: 0.42 },
+            elderly: { permittivity: 41.3, conductivity: 0.58 }
+        };
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.viz-panel .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('infoView').textContent = view.charAt(0).toUpperCase() + view.slice(1);
+            drawRadiationPattern();
+        }
+
+        function setCurrentView(view) {
+            currentFieldView = view;
+            document.querySelectorAll('.viz-panel .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            drawCurrentDistribution();
+        }
+
+        function setSARView(view) {
+            currentSARView = view;
+            document.querySelectorAll('.viz-panel .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            drawSAR();
+        }
+
+        function setSmithView(view) {
+            currentSmithView = view;
+            document.querySelectorAll('.viz-panel .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            drawSmithChart();
+        }
+
+        function calculate() {
+            // Update slider values
+            document.getElementById('curvatureVal').textContent = document.getElementById('curvature').value + '°';
+            document.getElementById('diameterVal').textContent = document.getElementById('diameter').value;
+            document.getElementById('distanceVal').textContent = document.getElementById('bodyDistance').value;
+            document.getElementById('freqVal').textContent = document.getElementById('frequency').value;
+            document.getElementById('powerVal').textContent = document.getElementById('power').value;
+            document.getElementById('bwVal').textContent = document.getElementById('bw').value;
+            document.getElementById('tempVal').textContent = document.getElementById('temp').value;
+            document.getElementById('humidVal').textContent = document.getElementById('humidity').value;
+
+            // Get parameters
+            const cupSize = document.getElementById('cupSize').value;
+            const material = document.getElementById('material').value;
+            const frequency = parseFloat(document.getElementById('frequency').value);
+            const power = parseFloat(document.getElementById('power').value);
+            const bodyDistance = parseFloat(document.getElementById('bodyDistance').value);
+            const curvature = parseFloat(document.getElementById('curvature').value);
+            const diameter = parseFloat(document.getElementById('diameter').value);
+
+            const mat = materials[material];
+            const dim = cupSizes[cupSize];
+            
+            // Calculations
+            const wavelength = 30000 / frequency; // cm
+            const wireLength = dim.wireLength * (curvature / 180);
+            const electricalLength = wireLength / wavelength;
+            
+            // Skin depth
+            const skinDepth = Math.sqrt(2 / (2 * Math.PI * frequency * 1e6 * 4 * Math.PI * 1e-7 * mat.permeability * mat.conductivity * 1e6)) * 1e6;
+            
+            // Body loading
+            const bodyType = document.getElementById('bodyType').value;
+            const tissue = tissueProps[bodyType];
+            const couplingFactor = 0.5 * Math.exp(-bodyDistance / 2) * Math.sqrt(tissue.permittivity / 10);
+            const effectivePermittivity = 1 + couplingFactor * (tissue.permittivity - 1);
+            
+            // Efficiency and gain
+            const ohmicLoss = Math.sqrt(frequency / 1000) / mat.conductivity;
+            const efficiency = mat.efficiency * (1 - couplingFactor * 0.6) * (1 - ohmicLoss);
+            const gain = 10 * Math.log10(efficiency * 1.64) + (electricalLength > 0.25 ? -2 : 0);
+            const directivity = gain - 10 * Math.log10(efficiency);
+            
+            // VSWR and impedance
+            const q = 15 + 20 / efficiency;
+            const resonantFreq = 300 / (4 * wireLength / 100) / Math.sqrt(effectivePermittivity);
+            const freqRatio = frequency / resonantFreq;
+            const detuning = (freqRatio - 1) * 100;
+            
+            const rRad = 20 * Math.PI * Math.PI * Math.pow(electricalLength, 2);
+            const rOhmic = wireLength * 0.001 / (mat.conductivity * Math.PI * diameter * skinDepth * 1e-6);
+            const rInput = rRad + rOhmic + couplingFactor * 15;
+            const xInput = 120 * Math.log(wavelength / diameter) * (1 - electricalLength);
+            
+            const zMag = Math.sqrt(rInput * rInput + xInput * xInput);
+            const gamma = Math.abs((zMag - 50) / (zMag + 50));
+            const vswr = (1 + gamma) / (1 - gamma);
+            const returnLoss = -20 * Math.log10(gamma);
+            const bandwidth = (resonantFreq / q) * 1000;
+            
+            // SAR
+            const powerDensity = power / 1000 / (4 * Math.PI * Math.pow(bodyDistance / 1000, 2));
+            const eField = Math.sqrt(powerDensity * 377);
+            const sar1g = tissue.conductivity * eField * eField / (2 * 1000);
+            const sar10g = sar1g * 0.58;
+            const tempRise = sar1g * 300 / 3700;
+            const hotspot = parseFloat(document.getElementById('temp').value) + tempRise;
+            
+            // F/B ratio
+            const fbRatio = -6 - 5 * Math.log10(electricalLength + 0.1);
+            const beamwidth = 65 + 30 / (electricalLength + 0.1);
+            
+            // Update displays
+            document.getElementById('gainMetric').textContent = gain.toFixed(1);
+            document.getElementById('directivityMetric').textContent = directivity.toFixed(1);
+            document.getElementById('fbMetric').textContent = fbRatio.toFixed(1);
+            document.getElementById('beamwidthMetric').textContent = Math.round(beamwidth) + '°';
+            
+            document.getElementById('zInput').textContent = Math.round(rInput) + (xInput >= 0 ? '+j' : '-j') + Math.abs(Math.round(xInput));
+            document.getElementById('vswrMetric').textContent = Math.min(vswr, 10).toFixed(2);
+            document.getElementById('rlMetric').textContent = returnLoss.toFixed(1);
+            document.getElementById('effMetric').textContent = (efficiency * 100).toFixed(1);
+            
+            document.getElementById('sar1gMetric').textContent = sar1g.toFixed(2);
+            document.getElementById('sar10gMetric').textContent = sar10g.toFixed(2);
+            document.getElementById('tempRiseMetric').textContent = tempRise.toFixed(1);
+            document.getElementById('hotspotMetric').textContent = hotspot.toFixed(1);
+            
+            document.getElementById('rRadMetric').textContent = rRad.toFixed(1);
+            document.getElementById('qMetric').textContent = Math.round(q);
+            document.getElementById('bwMetric').textContent = Math.round(bandwidth);
+            document.getElementById('resFreqMetric').textContent = (resonantFreq / 1000).toFixed(2);
+            
+            // Physics parameters
+            document.getElementById('wireLength').textContent = wireLength.toFixed(1) + ' cm';
+            document.getElementById('elecLength').textContent = electricalLength.toFixed(3) + 'λ';
+            document.getElementById('wavelength').textContent = wavelength.toFixed(1) + ' cm';
+            document.getElementById('skinDepth').textContent = skinDepth.toFixed(1) + ' μm';
+            document.getElementById('curvatureParam').textContent = curvature + '°';
+            document.getElementById('effArea').textContent = (Math.PI * Math.pow(wireLength / 100, 2) / 4).toFixed(3) + ' m²';
+            
+            document.getElementById('conductivity').textContent = mat.conductivity.toFixed(1) + ' MS/m';
+            document.getElementById('permeability').textContent = 'μᵣ = ' + mat.permeability.toFixed(3);
+            document.getElementById('lossTan').textContent = (ohmicLoss * 0.1).toFixed(4);
+            document.getElementById('ohmicLoss').textContent = (10 * Math.log10(1 + ohmicLoss)).toFixed(1) + ' dB';
+            document.getElementById('roughness').textContent = (skinDepth / 5).toFixed(1) + ' μm';
+            document.getElementById('coatingLoss').textContent = '0.3 dB';
+            
+            document.getElementById('couplingFactor').textContent = couplingFactor.toFixed(2);
+            document.getElementById('tissuePermit').textContent = tissue.permittivity.toFixed(1);
+            document.getElementById('tissueCond').textContent = tissue.conductivity.toFixed(2) + ' S/m';
+            document.getElementById('detuning').textContent = detuning.toFixed(1) + '%';
+            document.getElementById('bodyLoss').textContent = (10 * Math.log10(1 + couplingFactor * 2)).toFixed(1) + ' dB';
+            document.getElementById('nearFieldStr').textContent = Math.round(eField) + ' V/m';
+            
+            document.getElementById('vertPol').textContent = Math.round(75 + 10 * Math.sin(curvature * Math.PI / 180)) + '%';
+            document.getElementById('horizPol').textContent = Math.round(25 - 10 * Math.sin(curvature * Math.PI / 180)) + '%';
+            document.getElementById('crossPol').textContent = (-15 - 5 * (1 - efficiency)).toFixed(0) + ' dB';
+            document.getElementById('axialRatio').textContent = (2 + 2 / efficiency).toFixed(1) + ' dB';
+            document.getElementById('polLoss').textContent = (0.3 + 0.2 * (1 - efficiency)).toFixed(1) + ' dB';
+            
+            // Info overlays
+            document.getElementById('infoFreq').textContent = frequency;
+            document.getElementById('infoMat').textContent = material.charAt(0).toUpperCase() + material.slice(1);
+            document.getElementById('maxCurrent').textContent = Math.round(30 * Math.sqrt(power / 100));
+            document.getElementById('peakSAR').textContent = sar1g.toFixed(2);
+            document.getElementById('avgSAR').textContent = (sar1g * 0.35).toFixed(2);
+            document.getElementById('sarStatus').textContent = sar1g < 1.6 ? 'SAFE' : 'EXCEED';
+            document.getElementById('sarStatus').style.color = sar1g < 1.6 ? '#4caf50' : '#f44336';
+            document.getElementById('smithZ').textContent = Math.round(rInput) + (xInput >= 0 ? '+j' : '-j') + Math.abs(Math.round(xInput));
+            document.getElementById('reflCoeff').textContent = gamma.toFixed(2);
+            document.getElementById('matchQuality').textContent = vswr < 2 ? 'Good' : vswr < 3 ? 'Fair' : 'Poor';
+            
+            // Update comparison table
+            updateComparisonTable();
+            
+            // Redraw visualizations
+            drawRadiationPattern();
+            drawCurrentDistribution();
+            drawSAR();
+            drawSmithChart();
+        }
+
+        function drawRadiationPattern() {
+            const canvas = document.getElementById('patternCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxRadius = Math.min(centerX, centerY) - 40;
+            
+            // Clear
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const material = materials[document.getElementById('material').value];
+            const cupSize = cupSizes[document.getElementById('cupSize').value];
+            const frequency = parseFloat(document.getElementById('frequency').value);
+            const electricalLength = (cupSize.wireLength / 100) / (30000 / frequency);
+            
+            if (currentView === 'polar' || currentView === '3d') {
+                // Grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.lineWidth = 1;
+                for (let r = maxRadius / 5; r <= maxRadius; r += maxRadius / 5) {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+                
+                for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 6) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(centerX + maxRadius * Math.cos(angle), centerY + maxRadius * Math.sin(angle));
+                    ctx.stroke();
+                }
+                
+                // Pattern
+                ctx.strokeStyle = material.color;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = material.color;
+                ctx.beginPath();
+                
+                for (let theta = 0; theta <= 2 * Math.PI; theta += 0.01) {
+                    let pattern = Math.abs(Math.sin(theta)) * (0.5 + 0.5 * Math.cos(2 * theta * electricalLength));
+                    pattern *= 0.75; // Body loading
+                    
+                    if (currentView === '3d') {
+                        pattern *= (0.9 + 0.1 * Math.sin(theta * 3));
+                    }
+                    
+                    const radius = pattern * maxRadius;
+                    const x = centerX + radius * Math.cos(theta - Math.PI / 2);
+                    const y = centerY + radius * Math.sin(theta - Math.PI / 2);
+                    
+                    if (theta === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxRadius);
+                gradient.addColorStop(0, material.color + '50');
+                gradient.addColorStop(1, material.color + '10');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+            } else if (currentView === 'elevation') {
+                // Elevation pattern
+                ctx.fillStyle = 'rgba(139, 69, 19, 0.2)';
+                ctx.fillRect(0, centerY, canvas.width, canvas.height / 2);
+                
+                ctx.strokeStyle = material.color;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = material.color;
+                ctx.beginPath();
+                
+                for (let theta = 0; theta <= 2 * Math.PI; theta += 0.01) {
+                    let pattern = Math.abs(Math.sin(theta));
+                    if (theta > Math.PI) pattern *= 0.25; // Ground plane
+                    
+                    const radius = pattern * maxRadius * 0.8;
+                    const x = centerX + radius * Math.cos(theta);
+                    const y = centerY + radius * Math.sin(theta);
+                    
+                    if (theta === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+            
+            // Antenna indicator
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(centerX - 3, centerY - 20, 6, 40);
+        }
+
+        function drawCurrentDistribution() {
+            const canvas = document.getElementById('currentCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const material = materials[document.getElementById('material').value];
+            const wireRadius = 80;
+            
+            // Wire outline
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, wireRadius, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.stroke();
+            
+            if (currentFieldView === 'current') {
+                // Current distribution
+                for (let i = 0; i <= 40; i++) {
+                    const angle = 0.2 * Math.PI + (i / 40) * 0.6 * Math.PI;
+                    const x = centerX + wireRadius * Math.cos(angle);
+                    const y = centerY + wireRadius * Math.sin(angle);
+                    
+                    const position = i / 40;
+                    const current = Math.sin(Math.PI * position);
+                    const intensity = Math.abs(current);
+                    
+                    const vectorLength = intensity * 35;
+                    const vectorAngle = angle + Math.PI / 2;
+                    
+                    ctx.strokeStyle = `rgba(102, 126, 234, ${intensity})`;
+                    ctx.lineWidth = 2 + intensity * 3;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + vectorLength * Math.cos(vectorAngle), y + vectorLength * Math.sin(vectorAngle));
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(x + vectorLength * Math.cos(vectorAngle), y + vectorLength * Math.sin(vectorAngle), 3, 0, 2 * Math.PI);
+                    ctx.fillStyle = material.color;
+                    ctx.fill();
+                }
+            } else if (currentFieldView === 'efield') {
+                // E-field lines
+                for (let r = 20; r < 150; r += 20) {
+                    for (let a = 0; a < 2 * Math.PI; a += 0.3) {
+                        const distance = r;
+                        const intensity = Math.exp(-distance / 50);
+                        
+                        ctx.strokeStyle = `rgba(240, 147, 251, ${intensity})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        const endX = centerX + r * Math.cos(a);
+                        const endY = centerY + r * Math.sin(a);
+                        ctx.lineTo(endX, endY);
+                        ctx.stroke();
+                    }
+                }
+            } else if (currentFieldView === 'hfield') {
+                // H-field circles
+                for (let r = 20; r < 150; r += 15) {
+                    const intensity = Math.exp(-r / 50);
+                    ctx.strokeStyle = `rgba(78, 205, 196, ${intensity})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawSAR() {
+            const canvas = document.getElementById('sarCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Tissue layers
+            const layers = [
+                { y: centerY - 50, height: 25, color: '#ffdbac', name: 'Skin' },
+                { y: centerY - 25, height: 35, color: '#ffd700', name: 'Fat' },
+                { y: centerY + 10, height: 45, color: '#ff6b6b', name: 'Muscle' },
+                { y: centerY + 55, height: 65, color: '#ffb3ba', name: 'Breast' }
+            ];
+            
+            layers.forEach(layer => {
+                ctx.fillStyle = layer.color + '30';
+                ctx.fillRect(40, layer.y, canvas.width - 80, layer.height);
+                ctx.strokeStyle = layer.color + '60';
+                ctx.strokeRect(40, layer.y, canvas.width - 80, layer.height);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '11px Arial';
+                ctx.fillText(layer.name, 10, layer.y + layer.height / 2);
+            });
+            
+            // SAR distribution
+            const sar1g = parseFloat(document.getElementById('sar1gMetric').textContent);
+            
+            if (currentSARView === 'distribution' || currentSARView === 'thermal') {
+                for (let x = 50; x < canvas.width - 50; x += 12) {
+                    for (let y = centerY - 40; y < centerY + 100; y += 12) {
+                        const distance = Math.sqrt((x - centerX) ** 2 + (y - (centerY - 5)) ** 2);
+                        let intensity = Math.exp(-distance / 60) * sar1g;
+                        
+                        if (intensity > 0.05) {
+                            const alpha = Math.min(intensity / sar1g, 1);
+                            let color;
+                            if (currentSARView === 'thermal') {
+                                const temp = 37 + intensity * 5;
+                                const red = Math.min(255, 150 + temp * 2);
+                                const blue = Math.max(0, 255 - temp * 3);
+                                color = `rgba(${red}, 50, ${blue}, ${alpha * 0.7})`;
+                            } else {
+                                const red = Math.floor(255 * (intensity / sar1g));
+                                const green = Math.floor(255 * (1 - intensity / sar1g));
+                                color = `rgba(${red}, ${green}, 0, ${alpha * 0.6})`;
+                            }
+                            ctx.fillStyle = color;
+                            ctx.fillRect(x, y, 10, 10);
+                        }
+                    }
+                }
+            }
+            
+            if (currentSARView === 'contour') {
+                const contours = [0.5, 1.0, 1.6];
+                contours.forEach(level => {
+                    if (level <= sar1g * 2) {
+                        const radius = 70 * Math.sqrt(level / (sar1g + 0.1));
+                        ctx.strokeStyle = level >= 1.6 ? '#ff0000' : '#ffff00';
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY - 5, radius, 0, 2 * Math.PI);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        ctx.fillStyle = 'white';
+                        ctx.font = '10px Arial';
+                        ctx.fillText(level.toFixed(1) + ' W/kg', centerX + radius + 5, centerY - 5);
+                    }
+                });
+            }
+            
+            // Antenna position
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 5, 15, 0.3 * Math.PI, 0.7 * Math.PI);
+            ctx.stroke();
+        }
+
+        function drawSmithChart() {
+            const canvas = document.getElementById('smithCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 30;
+            
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Outer circle
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Resistance circles
+            const rValues = [0.2, 0.5, 1, 2, 5];
+            rValues.forEach(r => {
+                const circleRadius = radius / (1 + r);
+                const circleCenter = centerX + radius * r / (1 + r);
+                
+                ctx.strokeStyle = 'rgba(102, 126, 234, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(circleCenter, centerY, circleRadius, 0, 2 * Math.PI);
+                ctx.stroke();
+            });
+            
+            // Reactance arcs
+            const xValues = [0.5, 1, 2, 5];
+            xValues.forEach(x => {
+                const arcRadius = radius / x;
+                
+                ctx.strokeStyle = 'rgba(240, 147, 251, 0.3)';
+                ctx.beginPath();
+                ctx.arc(centerX + radius, centerY - arcRadius, arcRadius, 0, Math.PI);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(centerX + radius, centerY + arcRadius, arcRadius, Math.PI, 2 * Math.PI);
+                ctx.stroke();
+            });
+            
+            if (currentSmithView === 'impedance' || currentSmithView === 'vswr') {
+                // Plot impedance point
+                const zText = document.getElementById('smithZ').textContent;
+                const parts = zText.match(/(-?\d+)/g);
+                const r = parseFloat(parts[0]);
+                const x = parseFloat(parts[1]);
+                
+                // Normalize to 50 ohms
+                const rNorm = r / 50;
+                const xNorm = x / 50;
+                
+                const denom = Math.pow(rNorm + 1, 2) + xNorm * xNorm;
+                const uCoord = (rNorm * rNorm + xNorm * xNorm - 1) / denom;
+                const vCoord = (2 * xNorm) / denom;
+                
+                const plotX = centerX + uCoord * radius;
+                const plotY = centerY - vCoord * radius;
+                
+                // Impedance locus (frequency sweep)
+                ctx.strokeStyle = materials[document.getElementById('material').value].color;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.beginPath();
+                
+                for (let i = -0.2; i <= 0.2; i += 0.02) {
+                    const offsetR = r * (1 + i * 0.5);
+                    const offsetX = x * (1 + i);
+                    
+                    const rN = offsetR / 50;
+                    const xN = offsetX / 50;
+                    const d = Math.pow(rN + 1, 2) + xN * xN;
+                    const u = (rN * rN + xN * xN - 1) / d;
+                    const v = (2 * xN) / d;
+                    
+                    const px = centerX + u * radius;
+                    const py = centerY - v * radius;
+                    
+                    if (i === -0.2) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // Current point
+                ctx.beginPath();
+                ctx.arc(plotX, plotY, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ffd700';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                if (currentSmithView === 'vswr') {
+                    // VSWR circles
+                    const vswr = parseFloat(document.getElementById('vswrMetric').textContent);
+                    const gamma = (vswr - 1) / (vswr + 1);
+                    const vswrRadius = gamma * radius;
+                    
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, vswrRadius, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.fillText('VSWR = ' + vswr.toFixed(1), centerX + vswrRadius + 10, centerY);
+                }
+            }
+        }
+
+        function updateComparisonTable() {
+            const tbody = document.getElementById('comparisonBody');
+            tbody.innerHTML = '';
+            
+            const currentFreq = parseFloat(document.getElementById('frequency').value);
+            const currentCup = cupSizes[document.getElementById('cupSize').value];
+            
+            Object.keys(materials).forEach(matKey => {
+                const mat = materials[matKey];
+                const electricalLength = (currentCup.wireLength / 100) / (30000 / currentFreq);
+                
+                const efficiency = mat.efficiency * 0.8;
+                const gain = 10 * Math.log10(efficiency * 1.64);
+                const q = 15 + 20 / efficiency;
+                const vswr = 1 + q * 0.05;
+                const bw = (currentFreq / q).toFixed(0);
+                const costLabel = ['Very Low', 'Low', 'Medium', 'High', 'Very High'][mat.cost - 1];
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="color: ${mat.color}; font-weight: bold;">${matKey.charAt(0).toUpperCase() + matKey.slice(1)}</td>
+                    <td>${mat.conductivity.toFixed(1)} MS/m</td>
+                    <td>${(efficiency * 100).toFixed(1)}%</td>
+                    <td>${gain.toFixed(1)} dBi</td>
+                    <td>${vswr.toFixed(2)}:1</td>
+                    <td>${bw} MHz</td>
+                    <td>${costLabel}</td>
+                `;
+                
+                if (matKey === document.getElementById('material').value) {
+                    row.style.background = 'rgba(102, 126, 234, 0.2)';
+                }
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initialize
+        calculate();
+        
+        // Animation loop
+        function animate() {
+            // Only redraw if needed
+            animationId = requestAnimationFrame(animate);
+        }
+        animate();
+        
+        // Responsive
+        window.addEventListener('resize', () => {
+            setTimeout(calculate, 100);
+        });
+    </script>
+</body>
+</html>
