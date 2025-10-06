@@ -284,7 +284,7 @@ const AdvancedImageRegressionInterface = () => {
 
       {/* Advanced Parameters */}
       <div className="bg-gray-800 rounded-lg p-4">
-        <h3 className="font-semibold mb-3">Advanced Parameters</h3>
+        <h3 className="font-semibold mb-3">Parameters</h3>
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-300 mb-1">Registration Method</label>
@@ -492,7 +492,7 @@ const AdvancedImageRegressionInterface = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-blue-400">Advanced Image Registration Interface</h1>
+              <h1 className="text-2xl font-bold text-blue-400">Image Registration Interface</h1>
               <p className="text-gray-400 mt-1">Multi-modal user interface with advanced visualization overlays</p>
             </div>
             

@@ -498,7 +498,7 @@ const ProfessionalBrainwaveDesktop = () => {
     );
   };
 
-  // Advanced frequency band display with phase information
+  // Frequency band display with phase information
   const AdvancedFrequencyBand = ({ band, data, color }) => (
     <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-3">
@@ -557,7 +557,7 @@ const ProfessionalBrainwaveDesktop = () => {
     </div>
   );
 
-  // Enhanced Music Control Panel
+  // Music Control Panel
   const AdvancedMusicPanel = () => {
     const binauralFreqRanges = {
       delta: { min: 0.5, max: 4, optimal: 2 },
@@ -785,10 +785,8 @@ const ProfessionalBrainwaveDesktop = () => {
                 <Brain className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  NeuroWave Professional Desktop
-                </h1>
-                <p className="text-lg text-gray-600 font-medium">Advanced Brainwave Analysis & Music Entrainment Platform</p>
+                <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">NeuroWave Professional Desktop</h1>
+                <p className="text-lg text-gray-600 font-medium">Brainwave Analysis & Music Entrainment Platform</p>
               </div>
               <div className="ml-6 flex space-x-2">
                 <span className="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">v2.5 Research</span>

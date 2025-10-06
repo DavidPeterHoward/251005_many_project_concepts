@@ -37,7 +37,7 @@ const ConversationAnalysisPlatform = () => {
   const conversationAnalysisData = {
     'conv_react_advanced': {
       id: 'conv_react_advanced',
-      title: 'Advanced React Architecture & Performance',
+      title: 'React Architecture & Performance',
       totalScore: 94.2,
       analysisTimestamp: '2025-01-15T16:45:00Z',
       methodology: {
@@ -541,7 +541,7 @@ const ConversationAnalysisPlatform = () => {
               </div>
             </div>
             <div>
-              <h4 className="font-medium text-slate-800 mb-3">Advanced Metrics</h4>
+              <h4 className="font-medium text-slate-800 mb-3">Key Metrics</h4>
               <div className="space-y-3">
                 {Object.entries(analysis.qualityMetrics).slice(5).map(([metric, score]) => (
                   <div key={metric}>
@@ -961,7 +961,7 @@ const ConversationAnalysisPlatform = () => {
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
             <Microscope size={20} className="text-white" />
           </div>
-          <h1 className="text-lg font-bold text-slate-900">Advanced Conversation Analysis & Critique Platform</h1>
+          <h1 className="text-lg font-bold text-slate-900">Conversation Analysis & Critique Platform</h1>
           <span className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
             Deep Analysis Engine
           </span>

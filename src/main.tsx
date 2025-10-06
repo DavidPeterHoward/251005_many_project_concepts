@@ -1,3 +1,4 @@
+// @refresh reload
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Link } from 'react-router-dom'
@@ -6,6 +7,22 @@ import '../src/index.css'
 
 function Home() {
   const [query, setQuery] = React.useState('')
+  const screenshots = React.useMemo(() => {
+    const modules = import.meta.glob('./screenshots/*?url', { eager: true, import: 'default' }) as Record<string, string>
+    // Convert to array of { url, name, title }
+    const toTitle = (name: string) => {
+      const base = name.replace(/\?.*$/, '')
+      const withoutExt = base.replace(/\.[a-zA-Z0-9]+$/, '')
+      const words = withoutExt.replace(/[-_]+/g, ' ').trim()
+      return words.charAt(0).toUpperCase() + words.slice(1)
+    }
+    return Object.entries(modules)
+      .map(([p, url]) => {
+        const name = p.split('/').pop() || p
+        return { url, name, title: toTitle(name) }
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [])
 
   // Priority: ensure EM (Bra) project first
   const prioritized = React.useMemo(() => {
@@ -51,12 +68,26 @@ function Home() {
           {filtered.map(app => (
             <div key={app.id} className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
               {/* Preview area */}
-              <div className="aspect-video bg-slate-50 border-b border-slate-200 overflow-hidden">
-                {app.type === 'react' ? (
-                  <iframe title={`preview-${app.id}`} src={app.path} className="w-full h-full scale-100 origin-top-left" />
-                ) : (
-                  <iframe title={`preview-${app.id}`} src={app.path} className="w-full h-full" />
-                )}
+              <div className="h-[400px] bg-slate-50 border-b border-slate-200 overflow-hidden">
+                <div className="w-[1280px] h-[800px] transform scale-50 origin-top-left">
+                  {app.type === 'react' ? (
+                    <iframe
+                      title={`preview-${app.id}`}
+                      src={app.path}
+                      loading="lazy"
+                      sandbox="allow-same-origin allow-scripts"
+                      className="w-[1280px] h-[800px]"
+                    />
+                  ) : (
+                    <iframe
+                      title={`preview-${app.id}`}
+                      src={app.path}
+                      loading="lazy"
+                      sandbox="allow-same-origin allow-scripts"
+                      className="w-[1280px] h-[800px]"
+                    />
+                  )}
+                </div>
               </div>
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -76,6 +107,28 @@ function Home() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Screenshots section */}
+        <div className="mt-10">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Screenshots</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {screenshots.map((shot) => (
+              <div key={shot.name} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-200 aspect-video flex items-center justify-center">
+                  <img
+                    src={shot.url}
+                    alt={shot.title}
+                    loading="lazy"
+                    className="w-full h-full object-contain bg-slate-50"
+                  />
+                </div>
+                <div className="p-3">
+                  <div className="text-sm font-medium text-slate-900 truncate" title={shot.title}>{shot.title}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

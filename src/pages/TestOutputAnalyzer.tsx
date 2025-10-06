@@ -680,7 +680,7 @@ FAILED tests/test_parsers.py::TestParserFactory::test_get_parser_javascript - ut
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Advanced</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
                 <div className="space-y-2">
                   <label className="flex items-center">
                     <input

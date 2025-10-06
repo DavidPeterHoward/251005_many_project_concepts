@@ -556,7 +556,7 @@ const AdvancedNeuralNarrativeEngine = () => {
           ? 'bg-gray-800 border-gray-700' 
           : 'bg-white border-gray-200'
       }`}>
-        {/* Advanced Header */}
+        {/* Header */}
         <div className={`p-4 border-b transition-colors duration-300 ${
           darkMode 
             ? 'border-gray-700 bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900' 
@@ -635,7 +635,7 @@ const AdvancedNeuralNarrativeEngine = () => {
             })}
           </div>
 
-          {/* Advanced Story Health Dashboard */}
+          {/* Story Health Dashboard */}
           <div className={`rounded-lg p-3 border transition-colors duration-300 ${
             darkMode 
               ? 'bg-gray-800 border-gray-600' 
@@ -1256,7 +1256,7 @@ const AdvancedNeuralNarrativeEngine = () => {
       <div className={`flex-1 flex flex-col transition-colors duration-300 ${
         darkMode ? 'bg-gray-800' : 'bg-white'
       }`}>
-        {/* Advanced Collaborative Command Bar */}
+        {/* Collaborative Command Bar */}
         <div className={`border-b p-4 transition-colors duration-300 ${
           darkMode 
             ? 'border-gray-700 bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900' 
@@ -1768,7 +1768,7 @@ const AdvancedNeuralNarrativeEngine = () => {
           </div>
         </div>
 
-        {/* Enhanced Status Bar with Advanced Neural Metrics */}
+        {/* Enhanced Status Bar with Neural Metrics */}
         <div className={`border-t px-6 py-3 transition-colors duration-300 ${
           darkMode 
             ? 'border-gray-700 bg-gradient-to-r from-gray-800 to-blue-900' 

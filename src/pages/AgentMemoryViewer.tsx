@@ -831,12 +831,8 @@ const AdvancedAgentMemoryViewer = () => {
             <div className="flex items-center space-x-3">
               <Brain className="w-8 h-8 text-purple-600" />
               <div>
-                <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Agent Memory Viewer
-                </h1>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Advanced visualization and management of agent memory systems
-                </p>
+                <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Agent Memory Viewer</h1>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Visualization and management of agent memory systems</p>
               </div>
             </div>
             
@@ -873,7 +869,7 @@ const AdvancedAgentMemoryViewer = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            {/* Advanced search */}
+            {/* Search */}
             <div className="relative flex items-center space-x-2">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
@@ -888,7 +884,7 @@ const AdvancedAgentMemoryViewer = () => {
                 />
               </div>
               
-              {/* Advanced filters */}
+            {/* Filters */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-2 rounded-lg text-sm flex items-center space-x-1 ${
@@ -988,7 +984,7 @@ const AdvancedAgentMemoryViewer = () => {
           </div>
         </div>
         
-        {/* Advanced filters panel */}
+        {/* Filters panel */}
         {showFilters && (
           <div className={`mt-4 p-4 rounded-lg border ${
             theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'

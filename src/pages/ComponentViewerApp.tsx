@@ -63,7 +63,7 @@ const ComponentViewer = () => {
         { id: 'ventilator', name: 'Medical Ventilator', complexity: 'High', components: 120 },
         { id: 'mri-machine', name: 'MRI Machine Components', complexity: 'Very High', components: 180 },
         { id: 'heart-monitor', name: 'Heart Rate Monitor', complexity: 'Medium', components: 60 },
-        { id: 'prosthetic-leg', name: 'Advanced Prosthetic Leg', complexity: 'High', components: 95 }
+        { id: 'prosthetic-leg', name: 'Prosthetic Leg', complexity: 'High', components: 95 }
       ]
     }
   ];

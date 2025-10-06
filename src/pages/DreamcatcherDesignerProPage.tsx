@@ -13,7 +13,7 @@ const PHYSICS_CONSTANTS = {
   BOLTZMANN: 1.381e-23
 };
 
-// Advanced Material Library with Extended Properties
+// Material Library with Extended Properties
 const MaterialFactory = {
   materials: {
     sinew: { 
@@ -32,7 +32,7 @@ const MaterialFactory = {
       name: 'Carbon Fiber', er: 3.5, conductivity: 1e4, density: 1600, 
       tensileStrength: 3500e6, lossTangent: 0.01, color: '#36454F',
       thermalConductivity: 150, specificHeat: 710, meltingPoint: 3773,
-      category: 'Advanced', cost: 200, availability: 'Medium'
+      category: 'High-Performance', cost: 200, availability: 'Medium'
     },
     silver: { 
       name: 'Silver Wire', er: 1.0, conductivity: 6.14e7, density: 10490, 
@@ -65,7 +65,7 @@ const MaterialFactory = {
   getByCategory: (category) => Object.entries(MaterialFactory.materials).filter(([_, mat]) => mat.category === category)
 };
 
-// Advanced Pattern Strategy with Animation Support
+// Pattern Strategy with Animation Support
 class PatternRenderer {
   static strategies = {
     traditional: (ctx, params) => PatternRenderer.drawTraditional(ctx, params),
@@ -310,7 +310,7 @@ class PatternRenderer {
   }
 }
 
-// Advanced Physics Calculator with Extended Analysis
+// Physics Calculator with Extended Analysis
 class PhysicsCalculator {
   static calculate(config) {
     if (!config || typeof config !== 'object') {
@@ -337,7 +337,7 @@ class PhysicsCalculator {
     const radiationResistance = 197 * Math.pow(D / wavelength, 4);
     const inductance = Math.max(0, 0.001 * D * (Math.log(8 * D / (webSpacing / 1000)) - 2) * 1e9);
     
-    // Advanced calculations
+    // Additional calculations
     const skinDepth = 1 / Math.sqrt(PHYSICS_CONSTANTS.PI * effectiveFreq * PHYSICS_CONSTANTS.MU0 * effectiveConductivity);
     const nearFieldDistance = Math.pow(wavelength, 2) / (2 * PHYSICS_CONSTANTS.PI * D);
     const reactiveNearField = wavelength / (2 * PHYSICS_CONSTANTS.PI);
@@ -472,7 +472,7 @@ const usePhysics = (config, temperature = 293) => {
   }, [config?.diameter, config?.materialType, config?.webSpacing, temperature]);
 };
 
-const useAdvancedCanvasRenderer = (canvasRef, config, animation = false) => {
+const useCanvasRenderer = (canvasRef, config, animation = false) => {
   const animationRef = useRef();
   const [animationTime, setAnimationTime] = useState(0);
 
@@ -626,7 +626,7 @@ const DesktopToolbar = memo(({ onSave, onLoad, onExport, onReset, animation, onT
       </h1>
       <div className="flex items-center space-x-2 text-sm text-gray-400">
         <Zap className="w-4 h-4" />
-        <span>Electromagnetic Analysis Suite</span>
+          <span>Electromagnetic Analysis Suite</span>
       </div>
     </div>
     
@@ -671,7 +671,7 @@ const EnhancedControlPanel = memo(({ config, onConfigChange, temperature, onTemp
     neural: 'Neural Network'
   };
 
-  const materialCategories = ['Traditional', 'Conductor', 'Advanced', 'Precious', 'Biomaterial', 'Experimental', 'Smart Material'];
+  const materialCategories = ['Traditional', 'Conductor', 'High-Performance', 'Precious', 'Biomaterial', 'Experimental', 'Smart Material'];
   
   return (
     <div className="bg-gray-800 rounded-xl p-6 h-full overflow-y-auto">
@@ -726,7 +726,7 @@ const EnhancedControlPanel = memo(({ config, onConfigChange, temperature, onTemp
           </div>
         </div>
 
-        {/* Advanced Parameter Sliders */}
+        {/* Parameter Sliders */}
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
@@ -808,7 +808,7 @@ const EnhancedControlPanel = memo(({ config, onConfigChange, temperature, onTemp
           </div>
         </div>
 
-        {/* Advanced Pattern Parameters */}
+        {/* Pattern Parameters */}
         {config.webPattern === 'fractal' && (
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -828,7 +828,7 @@ const EnhancedControlPanel = memo(({ config, onConfigChange, temperature, onTemp
 });
 
 const DesktopVisualization = memo(({ config, canvasRef, animation, showFieldLines }) => {
-  useAdvancedCanvasRenderer(canvasRef, { ...config, showFieldLines }, animation);
+  useCanvasRenderer(canvasRef, { ...config, showFieldLines }, animation);
   
   return (
     <div className="bg-gray-800 rounded-xl p-6 h-full flex flex-col">
@@ -869,11 +869,11 @@ const DesktopVisualization = memo(({ config, canvasRef, animation, showFieldLine
   );
 });
 
-const AdvancedPhysicsPanel = memo(({ physics, material, bioelectricData }) => (
+const PhysicsPanel = memo(({ physics, material, bioelectricData }) => (
   <div className="bg-gray-800 rounded-xl p-6 h-full overflow-y-auto">
     <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
       <Zap className="w-6 h-6 mr-2 text-yellow-400" />
-      Advanced Physics Analysis
+      Physics Analysis
     </h2>
     
     {/* Key Metrics Grid */}
@@ -987,7 +987,7 @@ const AdvancedPhysicsPanel = memo(({ physics, material, bioelectricData }) => (
   </div>
 ));
 
-const AdvancedChartsPanel = memo(({ frequencyData, radiationData, bioelectricData }) => {
+const ChartsPanel = memo(({ frequencyData, radiationData, bioelectricData }) => {
   const hasData = frequencyData?.length > 0 && radiationData?.length > 0;
   
   if (!hasData) {
@@ -995,7 +995,7 @@ const AdvancedChartsPanel = memo(({ frequencyData, radiationData, bioelectricDat
       <div className="bg-gray-800 rounded-xl p-6 h-full flex items-center justify-center">
         <div className="text-center text-gray-400">
           <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <div>Loading advanced analysis...</div>
+          <div>Loading analysis...</div>
         </div>
       </div>
     );
@@ -1005,7 +1005,7 @@ const AdvancedChartsPanel = memo(({ frequencyData, radiationData, bioelectricDat
     <div className="bg-gray-800 rounded-xl p-6 h-full overflow-y-auto">
       <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
         <Activity className="w-6 h-6 mr-2 text-blue-400" />
-        Advanced Analysis Dashboard
+        Analysis Dashboard
       </h2>
       
       <div className="space-y-8">
@@ -1288,7 +1288,7 @@ const DreamcatcherDesigner = () => {
             
             {/* Physics Panel */}
             <div className="w-80 p-4">
-              <AdvancedPhysicsPanel 
+              <PhysicsPanel 
                 physics={physics}
                 material={material}
                 bioelectricData={bioelectricData}
@@ -1297,9 +1297,9 @@ const DreamcatcherDesigner = () => {
           </div>
         </div>
         
-        {/* Right Sidebar - Advanced Charts */}
+        {/* Right Sidebar - Charts */}
         <div className="w-96 border-l border-gray-700 p-4">
-          <AdvancedChartsPanel 
+          <ChartsPanel 
             frequencyData={frequencyData}
             radiationData={radiationData}
             bioelectricData={bioelectricData}
